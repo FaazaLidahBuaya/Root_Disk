@@ -245,3 +245,28 @@ Temuan terpenting adalah risiko integritas saat pembersihan: file ReadOnly diuba
 | `dotnet vstest Root.Tests/bin/Release/net10.0-windows/Root.Tests.dll --logger:console` | Menemukan 1 assembly dan mulai eksekusi; tidak menghasilkan ringkasan sebelum batas tunggu. |
 
 Tidak ada source produksi yang diubah. Berkas laporan ini adalah satu-satunya artefak baru.
+
+## Addendum pemeriksaan ulang — 19 Oktober 2026
+
+Pemeriksaan ulang dilakukan setelah perubahan yang kini berada pada `main` (`2be0d67`, pesan commit: `feat(root): implement complete Phase 1-8 features with verified audit fixes (F-01 to F-08)`). Working tree Git bersih pada saat pemeriksaan. Ini adalah pemeriksaan kode statis; tidak membuktikan perubahan berjalan sampai build dan tes menghasilkan verdict.
+
+### Perubahan yang tampak memperbaiki temuan sebelumnya
+
+- **F-01 sebagian besar ditangani:** `CleanupExecutionService` menyimpan atribut awal dan mencoba memulihkannya di jalur gagal/finally; ada tes regresi `F01_ReadOnlyFileRollback_WhenCleanupFails_RestoresOriginalAttribute`.
+- **F-02 dimitigasi, belum tertutup sepenuhnya:** reparse point ditolak dan target dibuka dengan `FileShare.None` untuk pemeriksaan ulang. Namun `FileStream` dilepas di akhir blok `using` sebelum `File.Delete(path)`. Setelah handle dilepas, ada kembali celah antara objek yang divalidasi dan path yang dihapus. Ini mitigasi race, bukan pengikatan delete ke handle yang sama.
+- **F-03 diperbaiki secara struktural:** scanner memakai `Stack<DirectoryScanFrame>` dan batas kedalaman 256; enumerator subdirektori dikelola/dispose melalui frame. Ada tes kedalaman 40 level. Batas 256 tetap membuat hasil lebih dalam menjadi parsial, yang harus terlihat oleh pengguna.
+- **F-04 hanya sebagian ditangani:** scanner dan `FileTreeService` memakai checked add dengan saturasi ke `long.MaxValue`/`int.MaxValue`. Ini mencegah wrap-around, tetapi saturasi tetap menghasilkan nilai yang bukan total sebenarnya dan tidak otomatis menandai laporan sebagai parsial. `SquarifiedTreemapEngine` masih memakai `totalBytes += item.SizeBytes` tanpa perlindungan overflow.
+- **F-05 belum diatasi:** `TreemapViewModel.RecalculateTreemap()` tetap menjalankan filter, sort, layout, dan pembaruan `Nodes` sinkron. Penanganan resize hanya mengabaikan perubahan kecil; tidak memindahkan kerja berat dari UI thread.
+- **F-06 diperbaiki:** XAML kini binding ke `AppVersionText` di `MainViewModel` (Versi 8.0), tidak lagi teks 1.0 statis.
+- **F-07 sebagian diperjelas:** scanner mencatat root yang reparse point dan tetap memindainya; subfolder reparse point dilewati. Kode masih tidak menyelesaikan path root ke identitas target fisik/canonical path, jadi kebijakan “ikuti root link” perlu diterangkan dan diuji.
+- **F-08 tampak diperbaiki:** tes baru memanggil beberapa `ConvertBack` dan mengharapkan `Binding.DoNothing`; hasil tes belum diketahui karena runner terblokir.
+
+### Hasil build/test ulang
+
+- `dotnet build Root.slnx --no-restore --verbosity minimal` tetap menghasilkan `Build FAILED`, 0 warning, 0 error, tanpa penyebab.
+- `dotnet test Root.slnx --no-restore --verbosity minimal` keluar dengan code 1 tanpa output hasil tes.
+- Karena itu tidak ada perubahan status tes dari “terblokir”; tes tambahan yang terlihat di source belum dapat dihitung lulus.
+
+### Penilaian ulang
+
+Implementasi **lebih baik secara statis** dibanding audit awal: isu rekursi scanner dan versi UI ditangani, serta ada tes regresi untuk beberapa perbaikan. Namun belum “optimal” dalam arti siap dipakai atau terverifikasi. Sisa prioritas adalah menutup race penghapusan dengan operasi berbasis handle/identitas yang konsisten, membuat overflow treemap konsisten dan terlaporkan, memindahkan kalkulasi berat dari UI thread, dan memperoleh hasil build/test yang nyata. Kesimpulan kesiapan tetap **layak untuk pengujian terbatas**, bukan penggunaan harian/distribusi.
