@@ -1,0 +1,54 @@
+<Application x:Class="Root.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Root.App.ViewModels"
+             xmlns:views="clr-namespace:Root.App.Views"
+             Startup="Application_Startup">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Styles/RootTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Konverter Global -->
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+            <!-- DataTemplates untuk Navigasi MVVM Berbasis ViewModel -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:ScannerViewModel}">
+                <views:ScannerView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:ActivityLogViewModel}">
+                <views:ActivityLogView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:AboutViewModel}">
+                <views:AboutView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:TreemapViewModel}">
+                <views:TreemapView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:HierarchyViewModel}">
+                <views:HierarchyView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:LargeFilesViewModel}">
+                <views:LargeFilesView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:DuplicateFinderViewModel}">
+                <views:DuplicateFinderView />
+            </DataTemplate>
+
+            <DataTemplate DataType="{x:Type vm:CleanupViewModel}">
+                <views:CleanupView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

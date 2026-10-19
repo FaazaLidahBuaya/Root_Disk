@@ -1,0 +1,192 @@
+<UserControl x:Class="Root.App.Views.LargeFilesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Root.App.ViewModels"
+             xmlns:m="clr-namespace:Root.Core.Models;assembly=Root.Core"
+             xmlns:conv="clr-namespace:Root.App.Converters"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:LargeFilesViewModel}"
+             Foreground="{StaticResource BrushTextPrimary}">
+
+    <UserControl.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BooleanToVisibilityConverter x:Key="InvertBoolToVis" Invert="True" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+    </UserControl.Resources>
+
+    <Grid Margin="0,0,10,10">
+        <Grid.RowDefinitions>
+            <!-- Baris 1: Kartu Metrik Statistik Cepat -->
+            <RowDefinition Height="Auto" />
+            <!-- Baris 2: Bilah Kontrol & Filter -->
+            <RowDefinition Height="Auto" />
+            <!-- Baris 3: Tabel Daftar Berkas Besar -->
+            <RowDefinition Height="*" />
+            <!-- Baris 4: Panel Rincian Berkas Terpilih -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- BARIS 1: KARTU METRIK STATISTIK CEPAT -->
+        <UniformGrid Grid.Row="0" Columns="4" Margin="-4,0,-4,12">
+            <!-- Kartu 1: Total Berkas -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="4" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="TOTAL BERKAS BESAR" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                    <TextBlock Text="{Binding TotalFilesCount, StringFormat='{}{0:N0} berkas'}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Kartu 2: Total Ukuran -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="4" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="TOTAL UKURAN TERFILTER" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                    <TextBlock Text="{Binding TotalSizeFormatted}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Kartu 3: Berkas Terbesar -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="4" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="BERKAS PALING BESAR" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                    <TextBlock Text="{Binding LargestFileSize}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushAccentCyan}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding LargestFileName}" FontSize="11" Foreground="{StaticResource BrushTextMuted}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Kartu 4: Ambang Batas Minimum -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="4" Padding="12">
+                <StackPanel>
+                    <TextBlock Text="AMBANG BATAS FILTER" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                    <TextBlock Text="{Binding SelectedSizeOption.Label}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushAccentAmber}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- BARIS 2: BILAH KONTROL & FILTER -->
+        <Border Grid.Row="1" Style="{StaticResource RootCardStyle}" Margin="0,0,0,12" Padding="12,10">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Batas Ukuran Minimum -->
+                <TextBlock Text="Min Ukuran:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding SizeOptions}" SelectedItem="{Binding SelectedSizeOption}" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0" />
+
+                <!-- Ekstensi -->
+                <TextBlock Text="Ekstensi:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="105" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Semua" IsSelected="True" />
+                    <ComboBoxItem Content=".iso" />
+                    <ComboBoxItem Content=".zip" />
+                    <ComboBoxItem Content=".rar" />
+                    <ComboBoxItem Content=".mp4" />
+                    <ComboBoxItem Content=".mkv" />
+                    <ComboBoxItem Content=".exe" />
+                    <ComboBoxItem Content=".dll" />
+                    <ComboBoxItem Content=".dat" />
+                    <ComboBoxItem Content=".vmdk" />
+                </ComboBox>
+
+                <!-- Urutkan Berdasarkan -->
+                <TextBlock Text="Urutkan:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="120" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,0">
+                    <ComboBoxItem Content="Ukuran" Tag="{x:Static m:SortField.Ukuran}" IsSelected="True" />
+                    <ComboBoxItem Content="Nama" Tag="{x:Static m:SortField.Nama}" />
+                    <ComboBoxItem Content="Tanggal Diubah" Tag="{x:Static m:SortField.TanggalDiubah}" />
+                </ComboBox>
+
+                <ComboBox SelectedValue="{Binding SelectedSortDirection}" SelectedValuePath="Tag" Width="100" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Menurun" Tag="{x:Static m:SortDirection.Menurun}" IsSelected="True" />
+                    <ComboBoxItem Content="Menaik" Tag="{x:Static m:SortDirection.Menaik}" />
+                </ComboBox>
+
+                <!-- Batas Jumlah Hasil -->
+                <TextBlock Text="Batas:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding MaxResultsOptions}" SelectedItem="{Binding SelectedMaxResults}" Width="80" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0" />
+
+                <!-- Cari Nama -->
+                <TextBlock Text="Cari:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="130" Height="34" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
+
+                <!-- Tombol Reset -->
+                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" />
+            </WrapPanel>
+        </Border>
+
+        <!-- BARIS 3: TABEL DAFTAR BERKAS BESAR -->
+        <Border Grid.Row="2" Style="{StaticResource RootCardStyle}" Padding="0">
+            <Grid>
+                <!-- Kondisi Belum Ada Data -->
+                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Belum Ada Data Berkas" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
+                        <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Seluruh berkas berukuran besar akan dikumpulkan dan dianalisis secara instan di halaman ini." 
+                                   FontSize="13" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+                </Border>
+
+                <!-- DataGrid Berkas Besar -->
+                <DataGrid ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" 
+                          CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                          Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                          Foreground="{StaticResource BrushTextPrimary}" BorderThickness="0"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155"
+                          Visibility="{Binding HasData, Converter={StaticResource BoolToVis}}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#" Binding="{Binding Rank, StringFormat='{}{0}'}" Width="50" FontWeight="Bold" Foreground="#64748B" />
+                        <DataGridTextColumn Header="Nama Berkas" Binding="{Binding Name}" Width="280" FontWeight="SemiBold" />
+                        <DataGridTextColumn Header="Ukuran" Binding="{Binding FormattedSize}" Width="130" FontWeight="Bold" Foreground="#34D399" />
+                        <DataGridTextColumn Header="Ekstensi" Binding="{Binding Extension}" Width="90" Foreground="#38BDF8" />
+                        <DataGridTextColumn Header="Terakhir Diubah" Binding="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140" />
+                        <DataGridTextColumn Header="Folder Induk / Jalur Lengkap" Binding="{Binding FullPath}" Width="*" FontFamily="{StaticResource FontMono}" Foreground="#94A3B8" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Border>
+
+        <!-- BARIS 4: PANEL RINCIAN BERKAS TERPILIH -->
+        <Border Grid.Row="3" Style="{StaticResource RootCardStyle}" Margin="0,12,0,0" Padding="14,12"
+                Visibility="{Binding SelectedFile, Converter={StaticResource NullToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border Background="{StaticResource BrushAccentGreen}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding SelectedFile.Rank, StringFormat='#{0}'}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                        </Border>
+                        <TextBlock Text="{Binding SelectedFile.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedFile.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
+
+                        <TextBlock Text="Tipe: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedFile.TypeDescription}" FontWeight="SemiBold" Foreground="{StaticResource BrushAccentCyan}" FontSize="12" Margin="0,0,16,0" />
+
+                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedFile.FullPath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
+                    </WrapPanel>
+                </StackPanel>
+
+                <!-- Tombol Aksi -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Button Content="🗺️ Lihat di Treemap" Command="{Binding LihatDiTreemapCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+
+                    <Button Content="📋 Salin Jalur" Command="{Binding SalinJalurCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+
+                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Height="36" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

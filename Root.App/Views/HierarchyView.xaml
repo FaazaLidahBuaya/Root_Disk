@@ -1,0 +1,191 @@
+<UserControl x:Class="Root.App.Views.HierarchyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Root.App.ViewModels"
+             xmlns:m="clr-namespace:Root.Core.Models;assembly=Root.Core"
+             xmlns:conv="clr-namespace:Root.App.Converters"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:HierarchyViewModel}"
+             Foreground="{StaticResource BrushTextPrimary}">
+
+    <UserControl.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BooleanToVisibilityConverter x:Key="InvertBoolToVis" Invert="True" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+
+        <!-- Template Hierarkis TreeView untuk Direktori dan Berkas -->
+        <HierarchicalDataTemplate DataType="{x:Type m:FileSystemItemModel}" ItemsSource="{Binding Children}">
+            <Border Padding="4,3" CornerRadius="4" Margin="1">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Ikon -->
+                    <TextBlock Grid.Column="0" Text="📁 " FontSize="14" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Text="📄 " FontSize="14" Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" VerticalAlignment="Center" />
+
+                    <!-- Nama -->
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Medium" Foreground="#F8FAFC" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                    <!-- Ukuran -->
+                    <TextBlock Grid.Column="3" Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="#34D399" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsDirectory}" Value="True">
+                                        <Setter Property="Foreground" Value="#38BDF8" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Keterangan Subitem (Jika Folder) atau Tanggal (Jika Berkas) -->
+                    <TextBlock Grid.Column="4" Text="{Binding TotalSubItems, StringFormat='{}{0} item'}" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"
+                               Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" Margin="0,0,8,0" />
+                    <TextBlock Grid.Column="4" Text="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center"
+                               Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" Margin="0,0,8,0" />
+                </Grid>
+            </Border>
+        </HierarchicalDataTemplate>
+    </UserControl.Resources>
+
+    <Grid Margin="0,0,10,10">
+        <Grid.RowDefinitions>
+            <!-- Baris 1: Bilah Kontrol & Filter -->
+            <RowDefinition Height="Auto" />
+            <!-- Baris 2: Tampilan Hierarkis TreeView -->
+            <RowDefinition Height="*" />
+            <!-- Baris 3: Panel Rincian Item Terpilih -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- BARIS 1: BILAH FILTER & PENGURUTAN -->
+        <Border Grid.Row="0" Style="{StaticResource RootCardStyle}" Margin="0,0,0,12" Padding="12,10">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Urutkan Berdasarkan -->
+                <TextBlock Text="Urutkan:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,0">
+                    <ComboBoxItem Content="Ukuran" Tag="{x:Static m:SortField.Ukuran}" IsSelected="True" />
+                    <ComboBoxItem Content="Nama" Tag="{x:Static m:SortField.Nama}" />
+                    <ComboBoxItem Content="Tanggal Diubah" Tag="{x:Static m:SortField.TanggalDiubah}" />
+                </ComboBox>
+
+                <ComboBox SelectedValue="{Binding SelectedSortDirection}" SelectedValuePath="Tag" Width="105" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Menurun" Tag="{x:Static m:SortDirection.Menurun}" IsSelected="True" />
+                    <ComboBoxItem Content="Menaik" Tag="{x:Static m:SortDirection.Menaik}" />
+                </ComboBox>
+
+                <!-- Filter Ekstensi -->
+                <TextBlock Text="Ekstensi:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="110" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Semua" IsSelected="True" />
+                    <ComboBoxItem Content=".exe" />
+                    <ComboBoxItem Content=".dll" />
+                    <ComboBoxItem Content=".mp4" />
+                    <ComboBoxItem Content=".mkv" />
+                    <ComboBoxItem Content=".zip" />
+                    <ComboBoxItem Content=".rar" />
+                    <ComboBoxItem Content=".pdf" />
+                    <ComboBoxItem Content=".docx" />
+                    <ComboBoxItem Content=".iso" />
+                </ComboBox>
+
+                <!-- Batas Ukuran Minimum -->
+                <TextBlock Text="Min Ukuran:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox ItemsSource="{Binding SizeOptions}" SelectedItem="{Binding SelectedSizeOption}" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0" />
+
+                <!-- Cari Nama -->
+                <TextBlock Text="Cari:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="130" Height="34" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
+
+                <!-- Tombol Reset -->
+                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" />
+            </WrapPanel>
+        </Border>
+
+        <!-- BARIS 2: KONTEN TREEVIEW HIERARKIS -->
+        <Border Grid.Row="1" Style="{StaticResource RootCardStyle}" Padding="6">
+            <Grid>
+                <!-- Kondisi Belum Ada Data -->
+                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="🌳" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Belum Ada Data Hierarkis" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
+                        <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Struktur hierarki pohon direktori dan berkas akan ditampilkan secara terstruktur di sini." 
+                                   FontSize="13" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+                </Border>
+
+                <!-- TreeView Aktif -->
+                <TreeView ItemsSource="{Binding HierarchyItems}" Background="Transparent" BorderThickness="0"
+                          SelectedItemChanged="TreeView_SelectedItemChanged"
+                          Visibility="{Binding HasData, Converter={StaticResource BoolToVis}}">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}">
+                            <Setter Property="IsExpanded" Value="True" />
+                            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Padding" Value="2" />
+                            <Setter Property="Cursor" Value="Hand" />
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+            </Grid>
+        </Border>
+
+        <!-- BARIS 3: PANEL RINCIAN ITEM TERPILIH -->
+        <Border Grid.Row="2" Style="{StaticResource RootCardStyle}" Margin="0,12,0,0" Padding="14,12"
+                Visibility="{Binding SelectedItem, Converter={StaticResource NullToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border Background="{StaticResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding SelectedItem.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                        </Border>
+                        <TextBlock Text="{Binding SelectedItem.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedItem.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
+
+                        <TextBlock Text="Item / Berkas: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" Visibility="{Binding SelectedItem.IsDirectory, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding SelectedItem.TotalSubItems, StringFormat='{}{0:N0} item'}" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" FontSize="12" Margin="0,0,16,0"
+                                   Visibility="{Binding SelectedItem.IsDirectory, Converter={StaticResource BoolToVis}}" />
+
+                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedItem.FullPath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
+                    </WrapPanel>
+                </StackPanel>
+
+                <!-- Tombol Aksi -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Button Content="🗺️ Lihat di Treemap" Command="{Binding LihatDiTreemapCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+
+                    <Button Content="📋 Salin Jalur" Command="{Binding SalinJalurCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+
+                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Height="36" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,304 @@
+<UserControl x:Class="Root.App.Views.ScannerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Root.App.ViewModels"
+             xmlns:conv="clr-namespace:Root.App.Converters"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:ScannerViewModel}"
+             Foreground="{StaticResource BrushTextPrimary}">
+
+    <UserControl.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BooleanToVisibilityConverter x:Key="InvertBoolToVis" Invert="True" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+        <conv:StatusToBrushConverter x:Key="StatusToBrush" />
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="0,0,10,20">
+
+            <!-- KARTU 1: PEMILIHAN TARGET PEMINDAIAN -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Target Pemindaian Sistem Berkas" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,4" />
+                    <TextBlock Text="Pilih drive fisik/logis atau tentukan folder kustom yang ingin dianalisis." FontSize="13" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,16" />
+
+                    <!-- Opsi RadioButton Target -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                        <RadioButton Content="Gunakan Drive Sistem" IsChecked="{Binding IsCustomPathSelected, Converter={StaticResource InvertBoolToVis}}" 
+                                     Foreground="{StaticResource BrushTextPrimary}" FontWeight="Medium" Margin="0,0,24,0" VerticalAlignment="Center" />
+                        <RadioButton Content="Gunakan Folder Kustom" IsChecked="{Binding IsCustomPathSelected}" 
+                                     Foreground="{StaticResource BrushTextPrimary}" FontWeight="Medium" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Pilihan Drive -->
+                    <Grid Visibility="{Binding IsCustomPathSelected, Converter={StaticResource InvertBoolToVis}}" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox ItemsSource="{Binding Drives}" SelectedItem="{Binding SelectedDrive}" 
+                                  Style="{StaticResource RootComboBoxStyle}" Height="40">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="4,2">
+                                        <TextBlock Text="💾 " FontSize="14" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Medium" Foreground="#F8FAFC" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DriveFormat, StringFormat=' ({0})'}" Foreground="#94A3B8" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Button Grid.Column="1" Content="🔄 Segarkan Drive" Command="{Binding SegarkanDrivesCommand}" 
+                                Style="{StaticResource SecondaryButtonStyle}" Margin="10,0,0,0" Height="40" />
+                    </Grid>
+
+                    <!-- Pilihan Folder Kustom -->
+                    <Grid Visibility="{Binding IsCustomPathSelected, Converter={StaticResource BoolToVis}}" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Text="{Binding CustomPath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Style="{StaticResource RootTextBoxStyle}" Height="40" VerticalContentAlignment="Center" />
+
+                        <Button Grid.Column="1" Content="📁 Pilih Folder..." Command="{Binding PilihFolderCommand}" 
+                                Style="{StaticResource SecondaryButtonStyle}" Margin="10,0,0,0" Height="40" />
+                    </Grid>
+
+                    <!-- Tombol Aksi Utama -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="▶ Mulai Pemindaian" Command="{Binding MulaiPemindaianCommand}" 
+                                Style="{StaticResource PrimaryButtonStyle}" Height="42" Margin="0,0,12,0" />
+                        
+                        <Button Content="⏹ Batalkan Pemindaian" Command="{Binding BatalPemindaianCommand}" 
+                                Style="{StaticResource DangerButtonStyle}" Height="42" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- KARTU 2: INDIKATOR KEMAJUAN WAKTU NYATA -->
+            <Border Style="{StaticResource RootCardStyle}" Margin="0,0,0,16">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Status: " FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" />
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Background="#1E3A8A" CornerRadius="4" Padding="8,4" 
+                                Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="⚡ MEMINDAI AKTIF" FontSize="11" FontWeight="Bold" Foreground="#60A5FA" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Progress Bar -->
+                    <ProgressBar IsIndeterminate="{Binding IsScanning}" Height="6" Margin="0,0,0,12" 
+                                 Style="{StaticResource RootProgressBarStyle}" />
+
+                    <!-- Path yang sedang dipindai -->
+                    <DockPanel LastChildFill="True" Margin="0,0,0,16">
+                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontWeight="SemiBold" DockPanel.Dock="Left" />
+                        <TextBlock Text="{Binding CurrentScannedPath}" Foreground="{StaticResource BrushAccentCyan}" 
+                                   FontFamily="{StaticResource FontMono}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <!-- Grid Metrik Statistik -->
+                    <UniformGrid Columns="3" Rows="2" Margin="-4">
+                        <!-- Metrik 1: Berkas -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="BERKAS TERPINDAI" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding ScannedFiles, StringFormat='{}{0:N0}'}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Metrik 2: Folder -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="DIREKTORI TERPINDAI" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding ScannedDirectories, StringFormat='{}{0:N0}'}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Metrik 3: Ukuran -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="TOTAL UKURAN" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding FormattedTotalBytes}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Metrik 4: Waktu -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="WAKTU BERJALAN" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding ElapsedTime}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Metrik 5: Kecepatan -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="KECEPATAN PINDAI" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding ScanRate}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushAccentCyan}" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Metrik 6: Item Dilewati / Akses Ditolak -->
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="4">
+                            <StackPanel>
+                                <TextBlock Text="IZIN DITOLAK / DILEWATI" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" />
+                                <TextBlock Text="{Binding SkippedCount, StringFormat='{}{0:N0} item'}" FontSize="20" FontWeight="Bold" 
+                                           Foreground="{Binding SkippedCount, Converter={StaticResource BoolToVis}}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- KARTU 3: HASIL PEMINDAIAN LENGKAP & PARSIAL -->
+            <Border Style="{StaticResource RootCardStyle}" Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Laporan Pemindaian" FontSize="16" FontWeight="SemiBold" Margin="0,0,12,0" />
+                            <Border Background="{Binding ScanResult.Status, Converter={StaticResource StatusToBrush}}" CornerRadius="4" Padding="8,3" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding ScanResult.StatusDescription}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" />
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="🗺️ Buka di Treemap Interaktif" Command="{Binding BukaTreemapCommand}" 
+                                    Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+                            <Button Content="📋 Salin Ringkasan Laporan" Command="{Binding SalinLaporanCommand}" 
+                                    Style="{StaticResource SecondaryButtonStyle}" Height="36" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Alert Banner jika Laporan Parsial -->
+                    <Border Background="#451A03" BorderBrush="{StaticResource BrushAccentAmber}" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,16"
+                            Visibility="{Binding ScanResult.IsPartial, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="⚠️ " FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="Perhatian: Laporan ini adalah laporan pemindaian parsial karena pemindaian dibatalkan atau terdapat direktori/berkas yang aksesnya dibatasi oleh izin sistem." 
+                                           Foreground="#FDE68A" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Command="{Binding RestartAsAdminCommand}" Style="{StaticResource AdminElevateButtonStyle}"
+                                    Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}"
+                                    Margin="12,0,0,0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🛡️ " FontSize="11" />
+                                    <TextBlock Text="Mulai Ulang sebagai Admin" FontSize="11" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- Tab Kontrol Hasil -->
+                    <TabControl SelectedIndex="{Binding SelectedTabIndex}" Background="Transparent" BorderThickness="0">
+                        <TabControl.Resources>
+                            <Style TargetType="TabItem">
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+                                <Setter Property="FontSize" Value="13" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                                <Setter Property="Padding" Value="14,8" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="TabItem">
+                                            <Border x:Name="tabBorder" Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2" Padding="{TemplateBinding Padding}" Margin="0,0,12,0">
+                                                <ContentPresenter ContentSource="Header" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="tabBorder" Property="BorderBrush" Value="{StaticResource BrushAccentGreen}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushAccentGreen}" />
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </TabControl.Resources>
+
+                        <!-- Tab 1: Berkas Terbesar -->
+                        <TabItem Header="Berkas Terbesar (Top 50)">
+                            <DataGrid ItemsSource="{Binding ScanResult.TopLargestFiles}" AutoGenerateColumns="False" 
+                                      CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                                      Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                                      Foreground="{StaticResource BrushTextPrimary}" BorderBrush="{StaticResource BrushCardBorder}"
+                                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155"
+                                      MaxHeight="360" Margin="0,12,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Nama Berkas" Binding="{Binding Name}" Width="250" FontWeight="Medium" />
+                                    <DataGridTextColumn Header="Ukuran" Binding="{Binding FormattedSize}" Width="120" FontWeight="Bold" Foreground="#34D399" />
+                                    <DataGridTextColumn Header="Tipe" Binding="{Binding TypeDescription}" Width="80" />
+                                    <DataGridTextColumn Header="Jalur Lengkap" Binding="{Binding FullPath}" Width="*" />
+                                    <DataGridTextColumn Header="Terakhir Diubah" Binding="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+
+                        <!-- Tab 2: Direktori Terbesar -->
+                        <TabItem Header="Direktori Terbesar (Top 50)">
+                            <DataGrid ItemsSource="{Binding ScanResult.TopLargestDirectories}" AutoGenerateColumns="False" 
+                                      CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                                      Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                                      Foreground="{StaticResource BrushTextPrimary}" BorderBrush="{StaticResource BrushCardBorder}"
+                                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155"
+                                      MaxHeight="360" Margin="0,12,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Nama Folder" Binding="{Binding Name}" Width="250" FontWeight="Medium" />
+                                    <DataGridTextColumn Header="Ukuran Total" Binding="{Binding FormattedSize}" Width="130" FontWeight="Bold" Foreground="#38BDF8" />
+                                    <DataGridTextColumn Header="Jumlah Berkas" Binding="{Binding FileCount, StringFormat='{}{0:N0}'}" Width="110" />
+                                    <DataGridTextColumn Header="Jalur Direktori" Binding="{Binding FullPath}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+
+                        <!-- Tab 3: Izin Ditolak & Peringatan -->
+                        <TabItem Header="{Binding ScanResult.Errors.Count, StringFormat='Izin Ditolak &amp; Kesalahan ({0})'}">
+                            <DataGrid ItemsSource="{Binding ScanResult.Errors}" AutoGenerateColumns="False" 
+                                      CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
+                                      Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                                      Foreground="{StaticResource BrushTextPrimary}" BorderBrush="{StaticResource BrushCardBorder}"
+                                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155"
+                                      MaxHeight="360" Margin="0,12,0,0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Waktu" Binding="{Binding FormattedTime}" Width="90" />
+                                    <DataGridTextColumn Header="Jenis Kesalahan" Binding="{Binding FriendlyType}" Width="140" Foreground="#F87171" FontWeight="SemiBold" />
+                                    <DataGridTextColumn Header="Keterangan" Binding="{Binding ErrorMessage}" Width="300" />
+                                    <DataGridTextColumn Header="Jalur Berkas / Folder" Binding="{Binding Path}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </TabItem>
+                    </TabControl>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

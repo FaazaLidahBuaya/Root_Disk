@@ -1,0 +1,330 @@
+<UserControl x:Class="Root.App.Views.TreemapView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Root.App.ViewModels"
+             xmlns:m="clr-namespace:Root.Core.Models;assembly=Root.Core"
+             xmlns:conv="clr-namespace:Root.App.Converters"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:TreemapViewModel}"
+             Foreground="{StaticResource BrushTextPrimary}">
+
+    <UserControl.Resources>
+        <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BooleanToVisibilityConverter x:Key="InvertBoolToVis" Invert="True" />
+        <conv:NullToVisibilityConverter x:Key="NullToVis" />
+        <conv:HexToBrushConverter x:Key="HexToBrush" />
+        <conv:DimensionToVisibilityConverter x:Key="DimToVis" MinWidth="50" MinHeight="26" />
+        <conv:DimensionToVisibilityConverter x:Key="DimToVisLarge" MinWidth="65" MinHeight="42" />
+    </UserControl.Resources>
+
+    <Grid Margin="0,0,10,10">
+        <Grid.RowDefinitions>
+            <!-- Baris 1: Bilah Navigasi & Jejak Lokasi (Breadcrumb) -->
+            <RowDefinition Height="Auto" />
+            <!-- Baris 2: Kanvas Treemap Interaktif -->
+            <RowDefinition Height="*" />
+            <!-- Baris 3: Panel Rincian Kotak Terpilih (Inspector) -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- BARIS 1: BILAH NAVIGASI & JEJAK LOKASI (BREADCRUMB) -->
+        <Border Grid.Row="0" Style="{StaticResource RootCardStyle}" Margin="0,0,0,12" Padding="12,10">
+            <StackPanel>
+                <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Tombol Kembali / Naik Satu Tingkat -->
+                <Button Grid.Column="0" Content="⬆ Ke Folder Induk" Command="{Binding NavigateUpCommand}" 
+                        Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,4" Margin="0,0,12,0" />
+
+                <!-- Jejak Lokasi Folder (Breadcrumb) -->
+                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center">
+                    <ItemsControl ItemsSource="{Binding Breadcrumbs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="{Binding Name}" 
+                                            Command="{Binding DataContext.NavigateToBreadcrumbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                            CommandParameter="{Binding}"
+                                            Cursor="Hand" Margin="2,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Background" Value="#1E293B" />
+                                                <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
+                                                <Setter Property="BorderBrush" Value="{StaticResource BrushCardBorder}" />
+                                                <Setter Property="BorderThickness" Value="1" />
+                                                <Setter Property="Padding" Value="8,4" />
+                                                <Setter Property="FontSize" Value="12" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                                <ContentPresenter VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter TargetName="bd" Property="Background" Value="#334155" />
+                                                                    <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+                                                                </Trigger>
+                                                                <DataTrigger Binding="{Binding IsLast}" Value="True">
+                                                                    <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushAccentGreen}" />
+                                                                    <Setter Property="Foreground" Value="{StaticResource BrushAccentGreen}" />
+                                                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                                                </DataTrigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Tanda Pemisah -->
+                                    <TextBlock Text="❯" Foreground="#64748B" FontSize="10" VerticalAlignment="Center" Margin="2,0" 
+                                               Visibility="{Binding IsLast, Converter={StaticResource InvertBoolToVis}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Ringkasan Folder Saat Ini -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="4" Padding="10,4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding CurrentFolder.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding CurrentFolder.TotalSubItems, StringFormat='({0} item)'}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- Bilah Filter & Pengurutan Treemap -->
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
+                <!-- Urutkan Berdasarkan -->
+                <TextBlock Text="Urutkan:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="120" Height="32" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,0">
+                    <ComboBoxItem Content="Ukuran" Tag="{x:Static m:SortField.Ukuran}" IsSelected="True" />
+                    <ComboBoxItem Content="Nama" Tag="{x:Static m:SortField.Nama}" />
+                    <ComboBoxItem Content="Tanggal Diubah" Tag="{x:Static m:SortField.TanggalDiubah}" />
+                </ComboBox>
+
+                <ComboBox SelectedValue="{Binding SelectedSortDirection}" SelectedValuePath="Tag" Width="100" Height="32" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Menurun" Tag="{x:Static m:SortDirection.Menurun}" IsSelected="True" />
+                    <ComboBoxItem Content="Menaik" Tag="{x:Static m:SortDirection.Menaik}" />
+                </ComboBox>
+
+                <!-- Ekstensi -->
+                <TextBlock Text="Ekstensi:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="105" Height="32" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                    <ComboBoxItem Content="Semua" IsSelected="True" />
+                    <ComboBoxItem Content=".exe" />
+                    <ComboBoxItem Content=".dll" />
+                    <ComboBoxItem Content=".mp4" />
+                    <ComboBoxItem Content=".mkv" />
+                    <ComboBoxItem Content=".zip" />
+                    <ComboBoxItem Content=".rar" />
+                    <ComboBoxItem Content=".pdf" />
+                    <ComboBoxItem Content=".docx" />
+                    <ComboBoxItem Content=".iso" />
+                </ComboBox>
+
+                <!-- Cari Nama -->
+                <TextBlock Text="Cari:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="32" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
+
+                <!-- Tombol Reset -->
+                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="32" Padding="10,2" />
+            </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- BARIS 2: KANVAS TREEMAP INTERAKTIF -->
+        <Border Grid.Row="1" x:Name="TreemapBorder" Style="{StaticResource RootCardStyle}" Padding="2"
+                SizeChanged="TreemapBorder_SizeChanged" ClipToBounds="True">
+            <Grid>
+                <!-- KONDISI A: BELUM ADA DATA PEMINDAIAN -->
+                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
+                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="🗺️" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Belum Ada Data Pemindaian" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
+                        <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Visualisasi Treemap interaktif dibangun secara dinamis dari hasil pemindaian sistem berkas nyata." 
+                                   FontSize="13" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
+                    </StackPanel>
+                </Border>
+
+                <!-- KONDISI B: FOLDER KOSONG (0 BERKAS) -->
+                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding IsEmptyFolder, Converter={StaticResource BoolToVis}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                        <TextBlock Text="Folder ini kosong" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextSecondary}" />
+                        <TextBlock Text="Tidak ada berkas atau subdirektori di dalam folder ini." FontSize="12" Foreground="{StaticResource BrushTextMuted}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- KONDISI C: KANVAS TREEMAP AKTIF -->
+                <ItemsControl ItemsSource="{Binding Nodes}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <Canvas Background="Transparent" ClipToBounds="True" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemContainerStyle>
+                        <Style TargetType="ContentPresenter">
+                            <Setter Property="Canvas.Left" Value="{Binding X}" />
+                            <Setter Property="Canvas.Top" Value="{Binding Y}" />
+                            <Setter Property="Width" Value="{Binding Width}" />
+                            <Setter Property="Height" Value="{Binding Height}" />
+                        </Style>
+                    </ItemsControl.ItemContainerStyle>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border x:Name="BoxBorder"
+                                    BorderBrush="#090D16" BorderThickness="1" 
+                                    Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
+                                    CornerRadius="2" Cursor="Hand" Margin="0.5"
+                                    MouseLeftButtonDown="TreemapBox_MouseLeftButtonDown"
+                                    MouseEnter="TreemapBox_MouseEnter"
+                                    MouseLeave="TreemapBox_MouseLeave">
+
+                                <!-- Tooltip Waktu Nyata Saat Penunjuk di Atas Kotak -->
+                                <Border.ToolTip>
+                                    <ToolTip Background="#0F172A" BorderBrush="{StaticResource BrushAccentCyan}" BorderThickness="1" Padding="12">
+                                        <StackPanel MaxWidth="360">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                <TextBlock Text="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" />
+                                                <TextBlock Text="📁 " Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" FontSize="14" />
+                                                <TextBlock Text="📄 " Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" FontSize="14" />
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#F8FAFC" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedSize}" Foreground="{StaticResource BrushAccentGreen}" FontWeight="Bold" FontSize="12" />
+
+                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Proporsi: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FormattedPercentage, StringFormat='{}{0} dari folder'}" Foreground="{StaticResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="12" />
+
+                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Tipe: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TypeDescription}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
+                                            </Grid>
+
+                                            <TextBlock Text="{Binding FullPath, StringFormat='Jalur: {0}'}" Foreground="#94A3B8" FontSize="11" FontFamily="{StaticResource FontMono}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                                            <Border Background="#1E293B" CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="💡 Klik untuk memilih • Klik 2x untuk masuk folder" Foreground="#FDE68A" FontSize="10" FontWeight="SemiBold" />
+                                            </Border>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </Border.ToolTip>
+
+                                <!-- Label Teks di Dalam Kotak (Tampil jika kotak cukup besar) -->
+                                <Grid Margin="3" ClipToBounds="True">
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" 
+                                                   TextTrimming="CharacterEllipsis" TextAlignment="Center">
+                                            <TextBlock.Visibility>
+                                                <MultiBinding Converter="{StaticResource DimToVis}">
+                                                    <Binding Path="Width" />
+                                                    <Binding Path="Height" />
+                                                </MultiBinding>
+                                            </TextBlock.Visibility>
+                                        </TextBlock>
+
+                                        <TextBlock Text="{Binding FormattedSize}" Foreground="#E2E8F0" FontSize="10" 
+                                                   TextAlignment="Center" Opacity="0.9">
+                                            <TextBlock.Visibility>
+                                                <MultiBinding Converter="{StaticResource DimToVisLarge}">
+                                                    <Binding Path="Width" />
+                                                    <Binding Path="Height" />
+                                                </MultiBinding>
+                                            </TextBlock.Visibility>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <DataTemplate.Triggers>
+                                <!-- Penyorotan Kotak Terpilih -->
+                                <DataTrigger Value="True">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{x:Null}">
+                                            <!-- Binding diatur secara programatik atau visual trigger -->
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+        </Border>
+
+        <!-- BARIS 3: PANEL RINCIAN KOTAK TERPILIH (INSPECTOR) -->
+        <Border Grid.Row="2" Style="{StaticResource RootCardStyle}" Margin="0,12,0,0" Padding="14,12"
+                Visibility="{Binding SelectedNode, Converter={StaticResource NullToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Rincian Item Terpilih -->
+                <StackPanel Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border Background="{StaticResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding SelectedNode.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                        </Border>
+                        <TextBlock Text="{Binding SelectedNode.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
+
+                        <TextBlock Text="Proporsi: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FormattedPercentage}" FontWeight="SemiBold" Foreground="{StaticResource BrushAccentCyan}" FontSize="12" Margin="0,0,16,0" />
+
+                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FullPath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
+                    </WrapPanel>
+                </StackPanel>
+
+                <!-- Tombol Navigasi / Aksi Item Terpilih -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <!-- Tombol Masuk ke Folder (Hanya tampil jika item adalah direktori) -->
+                    <Button Content="📂 Masuk ke Folder" Command="{Binding DrillDownCommand}" CommandParameter="{Binding SelectedNode}"
+                            Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0"
+                            Visibility="{Binding SelectedNode.IsDirectory, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Tombol Buka di Explorer -->
+                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Height="36" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

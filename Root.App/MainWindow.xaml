@@ -1,0 +1,206 @@
+<Window x:Class="Root.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:Root.App.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="ROOT - Penjelajah &amp; Analisis Penyimpanan Cepat" 
+        Height="820" Width="1240"
+        MinHeight="680" MinWidth="1020"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BrushDarkBg}"
+        FontFamily="{StaticResource FontMain}"
+        Foreground="{StaticResource BrushTextPrimary}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <!-- Sidebar Navigasi -->
+            <ColumnDefinition Width="260" />
+            <!-- Area Konten Utama -->
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- PANEL NAVIGASI SAMPING (SIDEBAR) -->
+        <Border Grid.Column="0" Background="{StaticResource BrushSidebarBg}" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Identitas Brand ROOT -->
+                <StackPanel Grid.Row="0" Margin="20,24,20,28">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <Border Background="{StaticResource BrushAccentGreen}" CornerRadius="8" Width="38" Height="38" Margin="0,0,12,0">
+                            <TextBlock Text="⚡" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#090D16" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="ROOT" FontSize="22" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" />
+                            <TextBlock Text="Storage Explorer" FontSize="11" Foreground="{StaticResource BrushAccentGreen}" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </StackPanel>
+                    
+                    <Border Background="#1E293B" CornerRadius="4" Padding="8,4" HorizontalAlignment="Left" Margin="0,4,0,0">
+                        <TextBlock Text="FASE 8: RILIS &amp; AUDIT" FontSize="10" FontWeight="Bold" Foreground="#38BDF8" />
+                    </Border>
+                </StackPanel>
+
+                <!-- Tombol Navigasi -->
+                <StackPanel Grid.Row="1" Margin="14,0,14,0">
+                    <TextBlock Text="NAVIGASI UTAMA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextMuted}" Margin="12,0,0,10" />
+
+                    <Button Command="{Binding NavigateToDashboardCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📊" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentGreen}" />
+                            <TextBlock Text="Dasbor Utama" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToScannerCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentCyan}" />
+                            <TextBlock Text="Pemindai Cepat" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToTreemapCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🗺️" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentGreen}" />
+                            <TextBlock Text="Treemap Interaktif" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToHierarchyCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🌳" FontSize="15" Margin="0,0,12,0" Foreground="#38BDF8" />
+                            <TextBlock Text="Daftar Hierarkis" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToLargeFilesCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📦" FontSize="15" Margin="0,0,12,0" Foreground="#F59E0B" />
+                            <TextBlock Text="Berkas Terbesar" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToDuplicateFinderCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="👥" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentRose}" />
+                            <TextBlock Text="Pencari Duplikat" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToCleanupCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🧹" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentAmber}" />
+                            <TextBlock Text="Pembersihan Aman" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToLogsCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📋" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentCyan}" />
+                            <TextBlock Text="Catatan Aktivitas" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Button Command="{Binding NavigateToAboutCommand}" Style="{StaticResource NavButtonStyle}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="ℹ️" FontSize="15" Margin="0,0,12,0" Foreground="{StaticResource BrushAccentAmber}" />
+                            <TextBlock Text="Tentang ROOT" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Info Bagian Bawah Sidebar -->
+                <Border Grid.Row="2" Margin="16" Background="#090D16" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <Ellipse Width="8" Height="8" Fill="{StaticResource BrushAccentGreen}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Mesin Pemindai Siap" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="Bahasa Indonesia • Asinkron C#" FontSize="10" Foreground="{StaticResource BrushTextMuted}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- AREA UTAMA -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <!-- Header Atas -->
+                <RowDefinition Height="64" />
+                <!-- Konten View -->
+                <RowDefinition Height="*" />
+                <!-- Status Bar Bawah -->
+                <RowDefinition Height="32" />
+            </Grid.RowDefinitions>
+
+            <!-- Header Atas -->
+            <Border Grid.Row="0" Background="{StaticResource BrushDarkBg}" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="0,0,0,1" Padding="24,0">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="ROOT" FontSize="13" Foreground="{StaticResource BrushTextMuted}" VerticalAlignment="Center" />
+                        <TextBlock Text=" / " FontSize="13" Foreground="{StaticResource BrushTextMuted}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding CurrentTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Indikator Administrator -->
+                        <Border Background="#064E3B" BorderBrush="#059669" BorderThickness="1" CornerRadius="4" Padding="10,4" Margin="0,0,10,0"
+                                Visibility="{Binding IsRunningAsAdmin, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="🛡️ Administrator" FontSize="11" FontWeight="Bold" Foreground="#34D399" />
+                        </Border>
+
+                        <!-- Indikator Pengguna Standar & Tombol Elevasi UAC -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                    Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}">
+                            <Border Background="#1E293B" BorderBrush="#475569" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,8,0">
+                                <TextBlock Text="🛡️ Pengguna Standar" FontSize="11" FontWeight="SemiBold" Foreground="#94A3B8" />
+                            </Border>
+                            <Button Command="{Binding RestartAsAdminCommand}" Style="{StaticResource AdminElevateButtonStyle}"
+                                    ToolTip="Mulai ulang aplikasi dengan hak akses Administrator melalui dialog Windows UAC">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚡ " FontSize="11" />
+                                    <TextBlock Text="Mulai Ulang Admin" FontSize="11" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="4" Padding="10,4">
+                            <TextBlock Text="{Binding AppVersionText}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" />
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Konten Tampilan Dinamis Berdasarkan ViewModel -->
+            <ContentControl Grid.Row="1" Content="{Binding CurrentView}" Margin="24,20,16,10" />
+
+            <!-- Status Bar Bawah -->
+            <Border Grid.Row="2" Background="{StaticResource BrushSidebarBg}" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="0,1,0,0" Padding="20,0">
+                <Grid VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Text="ROOT: Dasbor Visual, Kapasitas Drive, Riwayat SQLite, Komparasi Historis, Treemap, Hierarki, Pembersihan Konservatif, &amp; Audit Penuh" 
+                               FontSize="11" Foreground="{StaticResource BrushTextMuted}" VerticalAlignment="Center" />
+
+                    <TextBlock Grid.Column="1" Text="Fase 8 Selesai (Audit &amp; Rilis)" 
+                               FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushAccentGreen}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
