@@ -20,6 +20,8 @@ public class BreadcrumbItem
 
 public class TreemapViewModel : ViewModelBase
 {
+    private const int MaximumVisibleItems = 200;
+    private const string AggregateMarker = "::<ROOT-TREEMAP-AGGREGATE>";
     private readonly ITreemapEngine _treemapEngine;
     private readonly IFileTreeService _fileTreeService;
     private readonly ILoggerService _logger;
@@ -32,6 +34,7 @@ public class TreemapViewModel : ViewModelBase
     private double _containerHeight = 500;
     private bool _hasData;
     private bool _isEmptyFolder;
+    private bool _isScanInProgress;
 
     // Filter & Urutan
     private SortField _selectedSortField = SortField.Ukuran;
@@ -51,6 +54,7 @@ public class TreemapViewModel : ViewModelBase
 
         DrillDownCommand = new RelayCommand(p =>
         {
+            if (IsScanInProgress) return;
             if (p is TreemapNode node && node.IsDirectory)
             {
                 NavigateToFolder(node.Item);
@@ -145,6 +149,14 @@ public class TreemapViewModel : ViewModelBase
         private set => SetProperty(ref _isEmptyFolder, value);
     }
 
+    public bool IsScanInProgress
+    {
+        get => _isScanInProgress;
+        private set => SetProperty(ref _isScanInProgress, value);
+    }
+
+    public event Action? LayoutUpdated;
+
     public bool CanNavigateUp => CurrentFolder != null && RootFolder != null && CurrentFolder != RootFolder;
 
     // Filter & Urutan Properties
@@ -223,9 +235,19 @@ public class TreemapViewModel : ViewModelBase
     {
         if (rootItem == null) return;
 
+        IsScanInProgress = false;
         RootFolder = rootItem;
         _logger.LogInfo($"Memuat data hasil pemindaian nyata ke Treemap: '{rootItem.FullPath}' ({FileFormatter.FormatBytes(rootItem.SizeBytes)}).");
         NavigateToFolder(rootItem);
+    }
+
+    public void LoadScanPreview(FileSystemItemModel rootPreview)
+    {
+        if (rootPreview == null) return;
+
+        IsScanInProgress = true;
+        RootFolder = rootPreview;
+        CurrentFolder = rootPreview;
     }
 
     public void NavigateToFolder(FileSystemItemModel folder)
@@ -301,7 +323,7 @@ public class TreemapViewModel : ViewModelBase
 
     private static FileSystemItemModel? FindNodeInTree(FileSystemItemModel current, string fullPath)
     {
-        if (string.Equals(current.FullPath.TrimEnd('\\'), fullPath.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(current.FullPath.TrimEnd('\\'), fullPath.TrimEnd('\\'), StringComparison.Ordinal))
             return current;
 
         foreach (var child in current.Children)
@@ -318,12 +340,11 @@ public class TreemapViewModel : ViewModelBase
 
     public void RecalculateTreemap()
     {
-        Nodes.Clear();
-
         if (CurrentFolder == null)
         {
             HasData = false;
             IsEmptyFolder = false;
+            ApplyNodes(Array.Empty<TreemapNode>());
             return;
         }
 
@@ -331,7 +352,8 @@ public class TreemapViewModel : ViewModelBase
         if (children == null || children.Count == 0)
         {
             HasData = true;
-            IsEmptyFolder = true;
+            IsEmptyFolder = !IsScanInProgress;
+            ApplyNodes(Array.Empty<TreemapNode>());
             return;
         }
 
@@ -361,24 +383,76 @@ public class TreemapViewModel : ViewModelBase
         if (sortedChildren.Count == 0)
         {
             HasData = true;
-            IsEmptyFolder = true;
+            IsEmptyFolder = !IsScanInProgress;
+            ApplyNodes(Array.Empty<TreemapNode>());
             return;
         }
 
         HasData = true;
         IsEmptyFolder = false;
 
-        var calculatedNodes = _treemapEngine.CalculateLayout(sortedChildren, _containerWidth, _containerHeight);
-        foreach (var node in calculatedNodes)
+        IReadOnlyList<FileSystemItemModel> displayItems = sortedChildren;
+        if (sortedChildren.Count > MaximumVisibleItems)
         {
-            Nodes.Add(node);
+            var aggregateItems = sortedChildren.Skip(MaximumVisibleItems - 1).ToList();
+            long aggregateSize = 0;
+            foreach (var item in aggregateItems)
+            {
+                try
+                {
+                    aggregateSize = checked(aggregateSize + item.SizeBytes);
+                }
+                catch (OverflowException)
+                {
+                    aggregateSize = long.MaxValue;
+                    break;
+                }
+            }
+
+            var aggregate = new FileSystemItemModel
+            {
+                FullPath = CurrentFolder.FullPath + AggregateMarker,
+                Name = $"Lainnya ({aggregateItems.Count:N0} item)",
+                IsDirectory = false,
+                SizeBytes = aggregateSize,
+                DirectoryCount = aggregateItems.Count
+            };
+            displayItems = sortedChildren.Take(MaximumVisibleItems - 1).Append(aggregate).ToList();
+            _logger.LogInfo($"Treemap membatasi tampilan menjadi {MaximumVisibleItems} kotak; ukuran {aggregateItems.Count} item sisanya dijumlahkan pada kotak Lainnya.");
         }
 
-        // Pertahankan seleksi jika node masih ada di level ini
-        if (SelectedNode != null)
+        var selectedPath = SelectedNode?.FullPath;
+        var calculatedNodes = _treemapEngine.CalculateLayout(displayItems, _containerWidth, _containerHeight);
+        ApplyNodes(calculatedNodes);
+        SelectedNode = selectedPath == null
+            ? null
+            : Nodes.FirstOrDefault(n => string.Equals(n.FullPath, selectedPath, StringComparison.Ordinal));
+    }
+
+    private void ApplyNodes(IReadOnlyList<TreemapNode> calculatedNodes)
+    {
+        var existing = Nodes.ToDictionary(node => node.FullPath, StringComparer.Ordinal);
+
+        for (int targetIndex = 0; targetIndex < calculatedNodes.Count; targetIndex++)
         {
-            SelectedNode = Nodes.FirstOrDefault(n => n.FullPath == SelectedNode.FullPath);
+            var calculated = calculatedNodes[targetIndex];
+            if (existing.TryGetValue(calculated.FullPath, out var current))
+            {
+                current.UpdateFrom(calculated);
+                int currentIndex = Nodes.IndexOf(current);
+                if (currentIndex != targetIndex)
+                    Nodes.Move(currentIndex, targetIndex);
+            }
+            else
+            {
+                Nodes.Insert(targetIndex, calculated);
+            }
         }
+
+        while (Nodes.Count > calculatedNodes.Count)
+            Nodes.RemoveAt(Nodes.Count - 1);
+
+        LayoutUpdated?.Invoke();
     }
 
     private void BukaDiExplorer()

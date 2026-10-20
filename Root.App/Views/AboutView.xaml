@@ -15,7 +15,7 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <Border Background="{StaticResource BrushAccentGreen}" CornerRadius="8" Width="44" Height="44" Margin="0,0,16,0">
-                            <TextBlock Text="⚡" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#090D16" />
+                            <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#FFFFFF" />
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="ROOT" FontSize="24" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" />
@@ -28,14 +28,14 @@
             </Border>
 
             <!-- KARTU KEAMANAN & HAK ADMINISTRATOR -->
-            <Border Style="{StaticResource RootCardStyle}" Margin="0,0,0,16" Background="#0C1322" BorderBrush="#1E3A8A">
+            <Border Style="{StaticResource RootCardStyle}" Margin="0,0,0,16" Background="#EFF5FF" BorderBrush="#1E3A8A">
                 <StackPanel>
-                    <TextBlock Text="🛡️ Status Hak Akses &amp; Jaminan Keamanan Sistem" FontSize="16" FontWeight="SemiBold" Foreground="#60A5FA" Margin="0,0,0,12" />
+                    <TextBlock Text=" Status Hak Akses &amp; Jaminan Keamanan Sistem" FontSize="16" FontWeight="SemiBold" Foreground="#1D4ED8" Margin="0,0,0,12" />
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <TextBlock Text="Status Hak Akses Saat Ini: " Foreground="{StaticResource BrushTextSecondary}" FontSize="13" />
-                        <TextBlock Text="{Binding AdminPrivilegeText}" FontWeight="Bold" FontSize="13" Foreground="#34D399" />
+                        <TextBlock Text="{Binding AdminPrivilegeText}" FontWeight="Bold" FontSize="13" Foreground="#18794E" />
                     </StackPanel>
-                    <TextBlock Text="{Binding SecurityGuarantee}" FontSize="12" Foreground="#93C5FD" LineHeight="20" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding SecurityGuarantee}" FontSize="12" Foreground="#1D4ED8" LineHeight="20" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 

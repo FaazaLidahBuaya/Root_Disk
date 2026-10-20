@@ -9,20 +9,20 @@ namespace Root.Core.Utilities;
 public static class TreemapColorHelper
 {
     // Warna untuk direktori (Slate & Cyan accents)
-    public const string DirectoryColor = "#1E3A5F";
-    public const string DirectoryBorder = "#38BDF8";
+    public const string DirectoryColor = "#D9E4FF";
+    public const string DirectoryBorder = "#7567F8";
 
     // Kategori warna berkas
-    public const string ExecutableColor = "#6366F1"; // Ungu indigo (.exe, .dll, .msi, .bat, .cmd, .ps1)
-    public const string MediaVideoColor = "#06B6D4";  // Cyan terang (.mp4, .mkv, .avi, .mov, .wmv)
-    public const string MediaAudioColor = "#14B8A6";  // Teal (.mp3, .wav, .flac, .aac, .ogg)
-    public const string ImageColor = "#10B981";       // Emerald (.png, .jpg, .jpeg, .svg, .webp, .ico)
-    public const string ArchiveColor = "#F59E0B";     // Amber (.zip, .rar, .7z, .tar, .gz, .iso)
-    public const string DocumentColor = "#F43F5E";    // Rose/Merah (.pdf, .docx, .xlsx, .pptx, .txt, .md)
-    public const string CodeColor = "#8B5CF6";        // Violet (.cs, .js, .ts, .py, .html, .css, .json, .xml)
-    public const string DatabaseColor = "#EC4899";    // Pink (.db, .sqlite, .sql, .mdf)
-    public const string SystemColor = "#9333EA";      // Purple (.sys, .bin, .dat, .log)
-    public const string OtherColor = "#475569";       // Slate default
+    public const string ExecutableColor = "#DED9FF";
+    public const string MediaVideoColor = "#D4E9FF";
+    public const string MediaAudioColor = "#D1F0E8";
+    public const string ImageColor = "#D7F1E1";
+    public const string ArchiveColor = "#FBE9CB";
+    public const string DocumentColor = "#F9DDE4";
+    public const string CodeColor = "#E9DDF8";
+    public const string DatabaseColor = "#F6DCEC";
+    public const string SystemColor = "#E5E9F2";
+    public const string OtherColor = "#E8ECF4";
 
     public static string GetColorForExtension(string? extension, bool isDirectory)
     {

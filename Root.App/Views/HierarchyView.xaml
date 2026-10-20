@@ -8,51 +8,83 @@
              xmlns:conv="clr-namespace:Root.App.Converters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:HierarchyViewModel}"
-             Foreground="{StaticResource BrushTextPrimary}">
+             Foreground="{DynamicResource BrushTextPrimary}">
 
     <UserControl.Resources>
         <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
         <conv:BooleanToVisibilityConverter x:Key="InvertBoolToVis" Invert="True" />
         <conv:NullToVisibilityConverter x:Key="NullToVis" />
+        <conv:TreeRowWidthConverter x:Key="TreeRowWidthConverter" />
+        <conv:RelativeBarWidthConverter x:Key="RelativeBarWidthConverter" />
 
         <!-- Template Hierarkis TreeView untuk Direktori dan Berkas -->
         <HierarchicalDataTemplate DataType="{x:Type m:FileSystemItemModel}" ItemsSource="{Binding Children}">
-            <Border Padding="4,3" CornerRadius="4" Margin="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Ikon -->
-                    <TextBlock Grid.Column="0" Text="📁 " FontSize="14" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="0" Text="📄 " FontSize="14" Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" VerticalAlignment="Center" />
-
-                    <!-- Nama -->
-                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Medium" Foreground="#F8FAFC" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0" />
-
-                    <!-- Ukuran -->
-                    <TextBlock Grid.Column="3" Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="#34D399" />
+                    <Border Padding="4,3" CornerRadius="4" Margin="1" HorizontalAlignment="Stretch">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="Transparent" />
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsDirectory}" Value="True">
-                                        <Setter Property="Foreground" Value="#38BDF8" />
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsMouseOver}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource BrushHoverSurface}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource BrushSelectedSurface}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                        </Border.Style>
+                <Grid>
+                    <Grid.Width>
+                        <MultiBinding Converter="{StaticResource TreeRowWidthConverter}">
+                            <Binding RelativeSource="{RelativeSource AncestorType=TreeView}" Path="ActualWidth" />
+                            <Binding Path="ParentPath" />
+                            <Binding RelativeSource="{RelativeSource AncestorType=TreeView}" Path="DataContext.RawRoot.FullPath" />
+                            <Binding Path="FullPath" />
+                        </MultiBinding>
+                    </Grid.Width>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="100" />
+                    </Grid.ColumnDefinitions>
 
-                    <!-- Keterangan Subitem (Jika Folder) atau Tanggal (Jika Berkas) -->
-                    <TextBlock Grid.Column="4" Text="{Binding TotalSubItems, StringFormat='{}{0} item'}" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"
-                               Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" Margin="0,0,8,0" />
-                    <TextBlock Grid.Column="4" Text="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center"
-                               Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" Margin="0,0,8,0" />
+                    <!-- Ikon -->
+                    <TextBlock Grid.Column="0" Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource BrushAccentCyan}" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="0" Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="14" Foreground="{DynamicResource BrushTextMuted}" Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" VerticalAlignment="Center" />
+
+                    <!-- Nama -->
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Medium" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0"
+                               TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}" />
+
+                    <!-- Bar ukuran relatif terhadap item terbesar pada tingkat yang sama. -->
+                    <Grid Grid.Column="2" Height="28" Margin="2,0,8,0" ClipToBounds="True" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource BrushSizeBar}" CornerRadius="4" HorizontalAlignment="Left">
+                            <Border.Width>
+                                <MultiBinding Converter="{StaticResource RelativeBarWidthConverter}">
+                                    <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="ActualWidth" />
+                                    <Binding Path="RelativeSize" />
+                                </MultiBinding>
+                            </Border.Width>
+                        </Border>
+                        <TextBlock Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="8,0,2,0"
+                                   HorizontalAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource BrushSizeValue}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDirectory}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource BrushAccentCyan}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <!-- Jenis item: folder atau ekstensi berkas. -->
+                    <TextBlock Grid.Column="3" Text="{Binding TypeDescription}" Foreground="{DynamicResource BrushTextMuted}" FontSize="11" VerticalAlignment="Center"
+                               Margin="12,0,8,0" HorizontalAlignment="Right" />
                 </Grid>
             </Border>
         </HierarchicalDataTemplate>
@@ -70,23 +102,23 @@
 
         <!-- BARIS 1: BILAH FILTER & PENGURUTAN -->
         <Border Grid.Row="0" Style="{StaticResource RootCardStyle}" Margin="0,0,0,12" Padding="12,10">
-            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,-6">
                 <!-- Urutkan Berdasarkan -->
-                <TextBlock Text="Urutkan:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,0">
+                <TextBlock Text="Urutkan:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,8" />
+                <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,8">
                     <ComboBoxItem Content="Ukuran" Tag="{x:Static m:SortField.Ukuran}" IsSelected="True" />
                     <ComboBoxItem Content="Nama" Tag="{x:Static m:SortField.Nama}" />
                     <ComboBoxItem Content="Tanggal Diubah" Tag="{x:Static m:SortField.TanggalDiubah}" />
                 </ComboBox>
 
-                <ComboBox SelectedValue="{Binding SelectedSortDirection}" SelectedValuePath="Tag" Width="105" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                <ComboBox SelectedValue="{Binding SelectedSortDirection}" SelectedValuePath="Tag" Width="105" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,8">
                     <ComboBoxItem Content="Menurun" Tag="{x:Static m:SortDirection.Menurun}" IsSelected="True" />
                     <ComboBoxItem Content="Menaik" Tag="{x:Static m:SortDirection.Menaik}" />
                 </ComboBox>
 
                 <!-- Filter Ekstensi -->
-                <TextBlock Text="Ekstensi:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="110" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
+                <TextBlock Text="Ekstensi:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,8" />
+                <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="110" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,8">
                     <ComboBoxItem Content="Semua" IsSelected="True" />
                     <ComboBoxItem Content=".exe" />
                     <ComboBoxItem Content=".dll" />
@@ -100,15 +132,15 @@
                 </ComboBox>
 
                 <!-- Batas Ukuran Minimum -->
-                <TextBlock Text="Min Ukuran:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <ComboBox ItemsSource="{Binding SizeOptions}" SelectedItem="{Binding SelectedSizeOption}" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0" />
+                <TextBlock Text="Min Ukuran:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,8" />
+                <ComboBox ItemsSource="{Binding SizeOptions}" SelectedItem="{Binding SelectedSizeOption}" Width="130" Height="34" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,8" />
 
                 <!-- Cari Nama -->
-                <TextBlock Text="Cari:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
-                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="130" Height="34" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
+                <TextBlock Text="Cari:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,8" />
+                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="130" Height="34" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,8" VerticalContentAlignment="Center" />
 
                 <!-- Tombol Reset -->
-                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" />
+                <Button Content="Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" Margin="0,0,0,8" />
             </WrapPanel>
         </Border>
 
@@ -116,31 +148,47 @@
         <Border Grid.Row="1" Style="{StaticResource RootCardStyle}" Padding="6">
             <Grid>
                 <!-- Kondisi Belum Ada Data -->
-                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+            <Border Background="{DynamicResource BrushCardBg}" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
-                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <TextBlock Text="🌳" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource BrushInputBg}" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" FontSize="32" Foreground="{DynamicResource BrushAccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="Belum Ada Data Hierarkis" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
-                        <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Struktur hierarki pohon direktori dan berkas akan ditampilkan secara terstruktur di sini." 
-                                   FontSize="13" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
+                        <TextBlock Text="Belum ada hasil pemindaian" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource BrushTextPrimary}" />
                     </StackPanel>
                 </Border>
 
                 <!-- TreeView Aktif -->
-                <TreeView ItemsSource="{Binding HierarchyItems}" Background="Transparent" BorderThickness="0"
-                          SelectedItemChanged="TreeView_SelectedItemChanged"
-                          Visibility="{Binding HasData, Converter={StaticResource BoolToVis}}">
+                <Grid Visibility="{Binding HasData, Converter={StaticResource BoolToVis}}">
+                    <Grid.RowDefinitions><RowDefinition Height="30"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                    <Border Grid.Row="0" Background="{DynamicResource BrushDarkBg}" BorderBrush="{DynamicResource BrushCardBorder}" BorderThickness="0,0,0,1" Padding="7,0">
+                        <Grid VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/><ColumnDefinition Width="220"/><ColumnDefinition Width="100"/></Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Nama" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextMuted}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="Ukuran" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextMuted}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,16,0" />
+                            <TextBlock Grid.Column="3" Text="Jenis" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextMuted}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,8,0" />
+                        </Grid>
+                    </Border>
+                    <TreeView Grid.Row="1" ItemsSource="{Binding HierarchyItems}" Background="Transparent" BorderThickness="0"
+                              SelectedItemChanged="TreeView_SelectedItemChanged"
+                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                              ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="{x:Type TreeViewItem}">
-                            <Setter Property="IsExpanded" Value="True" />
-                            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+                            <Setter Property="IsExpanded" Value="False" />
+                            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}" />
                             <Setter Property="Background" Value="Transparent" />
                             <Setter Property="Padding" Value="2" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Cursor" Value="Hand" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ParentPath}" Value="{x:Null}">
+                                    <Setter Property="IsExpanded" Value="True" />
+                                </DataTrigger>
+                            </Style.Triggers>
                         </Style>
                     </TreeView.ItemContainerStyle>
-                </TreeView>
+                    </TreeView>
+                </Grid>
             </Grid>
         </Border>
 
@@ -155,34 +203,31 @@
 
                 <StackPanel Grid.Column="0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Border Background="{StaticResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding SelectedItem.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                        <Border Background="{DynamicResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding SelectedItem.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource BrushTextPrimary}" />
                         </Border>
-                        <TextBlock Text="{Binding SelectedItem.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding SelectedItem.Name}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
 
                     <WrapPanel Orientation="Horizontal">
-                        <TextBlock Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                        <TextBlock Text="{Binding SelectedItem.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
+                        <TextBlock Text="Ukuran: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedItem.FormattedSize}" FontWeight="Bold" Foreground="{DynamicResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
 
-                        <TextBlock Text="Item / Berkas: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" Visibility="{Binding SelectedItem.IsDirectory, Converter={StaticResource BoolToVis}}" />
-                        <TextBlock Text="{Binding SelectedItem.TotalSubItems, StringFormat='{}{0:N0} item'}" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" FontSize="12" Margin="0,0,16,0"
+                        <TextBlock Text="Item / Berkas: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" Visibility="{Binding SelectedItem.IsDirectory, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding SelectedItem.TotalSubItems, StringFormat='{}{0:N0} item'}" FontWeight="SemiBold" Foreground="{DynamicResource BrushTextPrimary}" FontSize="12" Margin="0,0,16,0"
                                    Visibility="{Binding SelectedItem.IsDirectory, Converter={StaticResource BoolToVis}}" />
 
-                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                        <TextBlock Text="{Binding SelectedItem.FullPath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Jalur: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedItem.FullPath}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
                     </WrapPanel>
                 </StackPanel>
 
                 <!-- Tombol Aksi -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Button Content="🗺️ Lihat di Treemap" Command="{Binding LihatDiTreemapCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0" />
-
-                    <Button Content="📋 Salin Jalur" Command="{Binding SalinJalurCommand}"
+                    <Button Content="Salin Jalur" Command="{Binding SalinJalurCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
 
-                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                    <Button Content="Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" Height="36" />
                 </StackPanel>
             </Grid>

@@ -108,7 +108,7 @@
                 <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="130" Height="34" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
 
                 <!-- Tombol Reset -->
-                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" />
+                <Button Content="Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,2" />
             </WrapPanel>
         </Border>
 
@@ -116,10 +116,10 @@
         <Border Grid.Row="2" Style="{StaticResource RootCardStyle}" Padding="0">
             <Grid>
                 <!-- Kondisi Belum Ada Data -->
-                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+                <Border Background="#FFFFFF" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
-                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Background="#F1F3FA" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="32" Foreground="{StaticResource BrushAccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <TextBlock Text="Belum Ada Data Berkas" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
                         <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Seluruh berkas berukuran besar akan dikumpulkan dan dianalisis secara instan di halaman ini." 
@@ -130,17 +130,17 @@
                 <!-- DataGrid Berkas Besar -->
                 <DataGrid ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" 
                           CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                          Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                          Background="#FFFFFF" RowBackground="#FFFFFF" AlternatingRowBackground="#F1F3FA"
                           Foreground="{StaticResource BrushTextPrimary}" BorderThickness="0"
-                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E3E6EF"
                           Visibility="{Binding HasData, Converter={StaticResource BoolToVis}}">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="#" Binding="{Binding Rank, StringFormat='{}{0}'}" Width="50" FontWeight="Bold" Foreground="#64748B" />
+                        <DataGridTextColumn Header="#" Binding="{Binding Rank, StringFormat='{}{0}'}" Width="50" FontWeight="Bold" Foreground="#7C879D" />
                         <DataGridTextColumn Header="Nama Berkas" Binding="{Binding Name}" Width="280" FontWeight="SemiBold" />
-                        <DataGridTextColumn Header="Ukuran" Binding="{Binding FormattedSize}" Width="130" FontWeight="Bold" Foreground="#34D399" />
+                        <DataGridTextColumn Header="Ukuran" Binding="{Binding FormattedSize}" Width="130" FontWeight="Bold" Foreground="#18794E" />
                         <DataGridTextColumn Header="Ekstensi" Binding="{Binding Extension}" Width="90" Foreground="#38BDF8" />
                         <DataGridTextColumn Header="Terakhir Diubah" Binding="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Width="140" />
-                        <DataGridTextColumn Header="Folder Induk / Jalur Lengkap" Binding="{Binding FullPath}" Width="*" FontFamily="{StaticResource FontMono}" Foreground="#94A3B8" />
+                        <DataGridTextColumn Header="Folder Induk / Jalur Lengkap" Binding="{Binding FullPath}" Width="*" FontFamily="{StaticResource FontMono}" Foreground="#52617E" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
@@ -158,7 +158,7 @@
                 <StackPanel Grid.Column="0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                         <Border Background="{StaticResource BrushAccentGreen}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding SelectedFile.Rank, StringFormat='#{0}'}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                            <TextBlock Text="{Binding SelectedFile.Rank, StringFormat='#{0}'}" FontWeight="Bold" FontSize="11" Foreground="#202B45" />
                         </Border>
                         <TextBlock Text="{Binding SelectedFile.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
@@ -177,13 +177,13 @@
 
                 <!-- Tombol Aksi -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                    <Button Content="🗺️ Lihat di Treemap" Command="{Binding LihatDiTreemapCommand}"
+                    <Button Content="Lihat di Treemap" Command="{Binding LihatDiTreemapCommand}"
                             Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0" />
 
-                    <Button Content="📋 Salin Jalur" Command="{Binding SalinJalurCommand}"
+                    <Button Content="Salin Jalur" Command="{Binding SalinJalurCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
 
-                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                    <Button Content="Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" Height="36" />
                 </StackPanel>
             </Grid>

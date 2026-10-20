@@ -36,10 +36,12 @@ public class ScannerViewModel : ViewModelBase
     private int _skippedCount;
     private ScanResultReport? _scanResult;
     private int _selectedTabIndex;
+    private bool _progressUiFaultReported;
 
     private readonly IAdminService? _adminService;
 
     public event Action<FileSystemItemModel?>? ScanCompleted;
+    public event Action<ScanProgressReport>? ScanProgressChanged;
     public event Action? RequestNavigateToTreemap;
 
     public ScannerViewModel(
@@ -80,6 +82,7 @@ public class ScannerViewModel : ViewModelBase
                     IsCustomPathSelected = false;
                 }
                 OnPropertyChanged(nameof(EffectiveTargetPath));
+                OnPropertyChanged(nameof(CanStartScan));
             }
         }
     }
@@ -92,6 +95,7 @@ public class ScannerViewModel : ViewModelBase
             if (SetProperty(ref _customPath, value))
             {
                 OnPropertyChanged(nameof(EffectiveTargetPath));
+                OnPropertyChanged(nameof(CanStartScan));
             }
         }
     }
@@ -104,6 +108,7 @@ public class ScannerViewModel : ViewModelBase
             if (SetProperty(ref _isCustomPathSelected, value))
             {
                 OnPropertyChanged(nameof(EffectiveTargetPath));
+                OnPropertyChanged(nameof(CanStartScan));
             }
         }
     }
@@ -297,19 +302,34 @@ public class ScannerViewModel : ViewModelBase
         ScanRate = "-";
         SkippedCount = 0;
         ScanResult = null;
+        _progressUiFaultReported = false;
 
         _scanCts = new CancellationTokenSource();
 
         var progress = new Progress<ScanProgressReport>(report =>
         {
-            CurrentScannedPath = report.CurrentPath;
-            ScannedFiles = report.ScannedFilesCount;
-            ScannedDirectories = report.ScannedDirectoriesCount;
-            TotalBytes = report.TotalBytesScanned;
-            FormattedTotalBytes = report.FormattedTotalBytes;
-            ElapsedTime = report.FormattedElapsedTime;
-            ScanRate = report.FormattedRate;
-            SkippedCount = report.SkippedCount;
+            try
+            {
+                CurrentScannedPath = report.CurrentPath;
+                ScannedFiles = report.ScannedFilesCount;
+                ScannedDirectories = report.ScannedDirectoriesCount;
+                TotalBytes = report.TotalBytesScanned;
+                FormattedTotalBytes = report.FormattedTotalBytes;
+                ElapsedTime = report.FormattedElapsedTime;
+                ScanRate = report.FormattedRate;
+                SkippedCount = report.SkippedCount;
+                if (!_progressUiFaultReported)
+                    ScanProgressChanged?.Invoke(report);
+            }
+            catch (Exception ex)
+            {
+                if (!_progressUiFaultReported)
+                {
+                    _progressUiFaultReported = true;
+                    StatusText = "Pemindaian masih berjalan, tetapi pembaruan progres/peta gagal. Lihat Catatan Aktivitas untuk detail.";
+                    _logger.LogError("Kesalahan pada callback progres UI; pemindaian tetap dilanjutkan.", ex.ToString());
+                }
+            }
         });
 
         try

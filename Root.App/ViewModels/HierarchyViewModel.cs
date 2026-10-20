@@ -161,7 +161,17 @@ public class HierarchyViewModel : ViewModelBase
 
         RawRoot = rootItem;
         HasData = true;
+        ApplyFilterAndSort();
         _logger.LogInfo($"Memuat data pohon ke Tampilan Hierarkis: '{rootItem.FullPath}' ({FileFormatter.FormatBytes(rootItem.SizeBytes)}).");
+    }
+
+    /// <summary>Memperbarui pohon dari snapshot terbatas selama pemindaian berlangsung.</summary>
+    public void LoadScanPreview(FileSystemItemModel rootPreview)
+    {
+        if (rootPreview == null) return;
+
+        RawRoot = rootPreview;
+        HasData = true;
         ApplyFilterAndSort();
     }
 
@@ -194,8 +204,31 @@ public class HierarchyViewModel : ViewModelBase
         // 2. Urutkan seluruh tingkat hierarki sesuai kriteria pilihan
         var sorted = _fileTreeService.SortHierarchy(filtered, SelectedSortField, SelectedSortDirection, directoriesFirst: true);
 
+        ApplyRelativeSizes(sorted);
+
         FilteredRoot = sorted;
         HierarchyItems.Add(sorted);
+    }
+
+    private static void ApplyRelativeSizes(FileSystemItemModel parent)
+    {
+        var pending = new Stack<FileSystemItemModel>();
+        pending.Push(parent);
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            current.RelativeSize = 1d;
+            if (current.Children.Count == 0)
+                continue;
+
+            long largestChild = current.Children.Max(child => child.SizeBytes);
+            foreach (var child in current.Children)
+            {
+                child.RelativeSize = largestChild <= 0 ? 0d : Math.Clamp((double)child.SizeBytes / largestChild, 0d, 1d);
+                if (child.IsDirectory)
+                    pending.Push(child);
+            }
+        }
     }
 
     private void BukaDiExplorer()

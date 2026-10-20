@@ -42,6 +42,7 @@ public class LargeFilesViewModel : ViewModelBase
     private string _searchQuery = string.Empty;
     private int _selectedMaxResults = 100;
     private bool _hasData;
+    private bool _isListPrepared;
 
     // Statistik Cepat
     private int _totalFilesCount;
@@ -217,12 +218,23 @@ public class LargeFilesViewModel : ViewModelBase
 
         RawRoot = rootItem;
         HasData = true;
+        _isListPrepared = false;
+        TotalFilesCount = rootItem.FileCount;
+        TotalSizeFormatted = rootItem.FormattedSize;
+        LargestFileName = "-";
+        LargestFileSize = "0 B";
         _logger.LogInfo($"Memuat data ke Halaman Berkas Berukuran Besar: '{rootItem.FullPath}'.");
-        RefreshFilesList();
+    }
+
+    public void PrepareForDisplay()
+    {
+        if (!_isListPrepared)
+            RefreshFilesList();
     }
 
     public void RefreshFilesList()
     {
+        _isListPrepared = true;
         Files.Clear();
 
         if (RawRoot == null)

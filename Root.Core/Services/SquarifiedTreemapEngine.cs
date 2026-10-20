@@ -14,6 +14,7 @@ namespace Root.Core.Services;
 public class SquarifiedTreemapEngine : ITreemapEngine
 {
     private const double MinZeroByteAreaFraction = 0.005; // 0.5% dari area kanvas untuk item 0 bita
+    private const string AggregateMarker = "::<ROOT-TREEMAP-AGGREGATE>";
 
     public IReadOnlyList<TreemapNode> CalculateLayout(IReadOnlyList<FileSystemItemModel> items, double containerWidth, double containerHeight)
     {
@@ -135,6 +136,10 @@ public class SquarifiedTreemapEngine : ITreemapEngine
         return result;
     }
 
+    private static TreemapNode CreateNode(FileSystemItemModel item) => item.FullPath.EndsWith(AggregateMarker, StringComparison.Ordinal)
+        ? new TreemapNode(item, isAggregate: true, aggregatedItemCount: item.DirectoryCount)
+        : new TreemapNode(item);
+
     private static double CalculateWorstAspectRatio(List<(FileSystemItemModel Item, double Area, double Percentage)> row, double sumArea, double length)
     {
         if (sumArea <= 0 || length <= 0) return double.MaxValue;
@@ -219,15 +224,13 @@ public class SquarifiedTreemapEngine : ITreemapEngine
                 itemW = Math.Max(0, Math.Min(itemW, containerW - currentX));
                 double finalH = Math.Max(0, Math.Min(rowHeight, containerH - ry));
 
-                var node = new TreemapNode(entry.Item)
-                {
-                    X = currentX,
-                    Y = ry,
-                    Width = itemW,
-                    Height = finalH,
-                    PercentageOfParent = entry.Percentage,
-                    ColorHex = TreemapColorHelper.GetColorForExtension(entry.Item.Extension, entry.Item.IsDirectory)
-                };
+                var node = CreateNode(entry.Item);
+                node.X = currentX;
+                node.Y = ry;
+                node.Width = itemW;
+                node.Height = finalH;
+                node.PercentageOfParent = entry.Percentage;
+                node.ColorHex = TreemapColorHelper.GetColorForExtension(entry.Item.Extension, entry.Item.IsDirectory);
 
                 result.Add(node);
                 currentX += itemW;
@@ -257,15 +260,13 @@ public class SquarifiedTreemapEngine : ITreemapEngine
                 itemH = Math.Max(0, Math.Min(itemH, containerH - currentY));
                 double finalW = Math.Max(0, Math.Min(colWidth, containerW - rx));
 
-                var node = new TreemapNode(entry.Item)
-                {
-                    X = rx,
-                    Y = currentY,
-                    Width = finalW,
-                    Height = itemH,
-                    PercentageOfParent = entry.Percentage,
-                    ColorHex = TreemapColorHelper.GetColorForExtension(entry.Item.Extension, entry.Item.IsDirectory)
-                };
+                var node = CreateNode(entry.Item);
+                node.X = rx;
+                node.Y = currentY;
+                node.Width = finalW;
+                node.Height = itemH;
+                node.PercentageOfParent = entry.Percentage;
+                node.ColorHex = TreemapColorHelper.GetColorForExtension(entry.Item.Extension, entry.Item.IsDirectory);
 
                 result.Add(node);
                 currentY += itemH;

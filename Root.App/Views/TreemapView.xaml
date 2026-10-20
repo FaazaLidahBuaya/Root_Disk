@@ -8,7 +8,7 @@
              xmlns:conv="clr-namespace:Root.App.Converters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:TreemapViewModel}"
-             Foreground="{StaticResource BrushTextPrimary}">
+             Foreground="{DynamicResource BrushTextPrimary}">
 
     <UserControl.Resources>
         <conv:BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -17,6 +17,7 @@
         <conv:HexToBrushConverter x:Key="HexToBrush" />
         <conv:DimensionToVisibilityConverter x:Key="DimToVis" MinWidth="50" MinHeight="26" />
         <conv:DimensionToVisibilityConverter x:Key="DimToVisLarge" MinWidth="65" MinHeight="42" />
+        <conv:DimensionToVisibilityConverter x:Key="DimToVisIcon" MinWidth="80" MinHeight="64" />
     </UserControl.Resources>
 
     <Grid Margin="0,0,10,10">
@@ -40,7 +41,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Tombol Kembali / Naik Satu Tingkat -->
-                <Button Grid.Column="0" Content="⬆ Ke Folder Induk" Command="{Binding NavigateUpCommand}" 
+                <Button Grid.Column="0" Content="Ke Folder Induk" Command="{Binding NavigateUpCommand}"
                         Style="{StaticResource SecondaryButtonStyle}" Height="34" Padding="12,4" Margin="0,0,12,0" />
 
                 <!-- Jejak Lokasi Folder (Breadcrumb) -->
@@ -60,9 +61,9 @@
                                             Cursor="Hand" Margin="2,0">
                                         <Button.Style>
                                             <Style TargetType="Button">
-                                                <Setter Property="Background" Value="#1E293B" />
-                                                <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}" />
-                                                <Setter Property="BorderBrush" Value="{StaticResource BrushCardBorder}" />
+                                                <Setter Property="Background" Value="{DynamicResource BrushInputBg}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource BrushTextSecondary}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource BrushCardBorder}" />
                                                 <Setter Property="BorderThickness" Value="1" />
                                                 <Setter Property="Padding" Value="8,4" />
                                                 <Setter Property="FontSize" Value="12" />
@@ -74,12 +75,12 @@
                                                             </Border>
                                                             <ControlTemplate.Triggers>
                                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                                    <Setter TargetName="bd" Property="Background" Value="#334155" />
-                                                                    <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}" />
+                                                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource BrushHoverSurface}" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}" />
                                                                 </Trigger>
                                                                 <DataTrigger Binding="{Binding IsLast}" Value="True">
-                                                                    <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrushAccentGreen}" />
-                                                                    <Setter Property="Foreground" Value="{StaticResource BrushAccentGreen}" />
+                                                                    <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource BrushAccentGreen}" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource BrushAccentGreen}" />
                                                                     <Setter Property="FontWeight" Value="SemiBold" />
                                                                 </DataTrigger>
                                                             </ControlTemplate.Triggers>
@@ -91,7 +92,7 @@
                                     </Button>
 
                                     <!-- Tanda Pemisah -->
-                                    <TextBlock Text="❯" Foreground="#64748B" FontSize="10" VerticalAlignment="Center" Margin="2,0" 
+                                    <TextBlock Text="›" Foreground="{DynamicResource BrushTextMuted}" FontSize="14" VerticalAlignment="Center" Margin="2,0"
                                                Visibility="{Binding IsLast, Converter={StaticResource InvertBoolToVis}}" />
                                 </StackPanel>
                             </DataTemplate>
@@ -101,10 +102,10 @@
 
                 <!-- Ringkasan Folder Saat Ini -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
-                    <Border Background="#0F172A" BorderBrush="{StaticResource BrushCardBorder}" BorderThickness="1" CornerRadius="4" Padding="10,4">
+                    <Border Background="{DynamicResource BrushCardBg}" BorderBrush="{DynamicResource BrushCardBorder}" BorderThickness="1" CornerRadius="4" Padding="10,4">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="{Binding CurrentFolder.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,8,0" />
-                            <TextBlock Text="{Binding CurrentFolder.TotalSubItems, StringFormat='({0} item)'}" Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
+                            <TextBlock Text="{Binding CurrentFolder.FormattedSize}" FontWeight="Bold" Foreground="{DynamicResource BrushAccentGreen}" FontSize="12" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding CurrentFolder.TotalSubItems, StringFormat='({0} item)'}" Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -112,8 +113,28 @@
 
             <!-- Bilah Filter & Pengurutan Treemap -->
             <WrapPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,10,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,6">
+                    <TextBlock Text="Disk:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                    <ComboBox Width="190" Height="32" Style="{StaticResource RootComboBoxStyle}"
+                              ItemsSource="{Binding DataContext.Scanner.Drives, RelativeSource={RelativeSource AncestorType=Window}}"
+                              SelectedItem="{Binding DataContext.Scanner.SelectedDrive, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                              ToolTip="{Binding DataContext.Scanner.SelectedDrive.DisplayName, RelativeSource={RelativeSource AncestorType=Window}}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource BrushTextPrimary}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Content="Pindai" Style="{StaticResource PrimaryButtonStyle}" Height="32" Padding="12,3" Margin="7,0,0,0"
+                            Command="{Binding DataContext.Scanner.MulaiPemindaianCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            IsEnabled="{Binding DataContext.Scanner.CanStartScan, RelativeSource={RelativeSource AncestorType=Window}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding DataContext.Scanner.StatusText, RelativeSource={RelativeSource AncestorType=Window}}"
+                           Visibility="{Binding DataContext.Scanner.IsScanning, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"
+                           Foreground="{DynamicResource BrushTextMuted}" FontSize="10" VerticalAlignment="Center" Margin="0,0,14,6"
+                           Width="150" TextTrimming="CharacterEllipsis" />
                 <!-- Urutkan Berdasarkan -->
-                <TextBlock Text="Urutkan:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="Urutkan:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <ComboBox SelectedValue="{Binding SelectedSortField}" SelectedValuePath="Tag" Width="120" Height="32" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,8,0">
                     <ComboBoxItem Content="Ukuran" Tag="{x:Static m:SortField.Ukuran}" IsSelected="True" />
                     <ComboBoxItem Content="Nama" Tag="{x:Static m:SortField.Nama}" />
@@ -126,7 +147,7 @@
                 </ComboBox>
 
                 <!-- Ekstensi -->
-                <TextBlock Text="Ekstensi:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="Ekstensi:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <ComboBox Text="{Binding FilterExtension, UpdateSourceTrigger=PropertyChanged}" IsEditable="True" Width="105" Height="32" Style="{StaticResource RootComboBoxStyle}" Margin="0,0,14,0">
                     <ComboBoxItem Content="Semua" IsSelected="True" />
                     <ComboBoxItem Content=".exe" />
@@ -141,11 +162,11 @@
                 </ComboBox>
 
                 <!-- Cari Nama -->
-                <TextBlock Text="Cari:" Foreground="{StaticResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
+                <TextBlock Text="Cari:" Foreground="{DynamicResource BrushTextSecondary}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,6,0" />
                 <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="120" Height="32" Style="{StaticResource RootTextBoxStyle}" Margin="0,0,12,0" VerticalContentAlignment="Center" />
 
                 <!-- Tombol Reset -->
-                <Button Content="🔄 Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="32" Padding="10,2" />
+                <Button Content="Reset Filter" Command="{Binding ResetFilterCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="32" Padding="10,2" />
             </WrapPanel>
             </StackPanel>
         </Border>
@@ -155,28 +176,28 @@
                 SizeChanged="TreemapBorder_SizeChanged" ClipToBounds="True">
             <Grid>
                 <!-- KONDISI A: BELUM ADA DATA PEMINDAIAN -->
-                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
+                <Border Background="{DynamicResource BrushCardBg}" CornerRadius="6" Visibility="{Binding HasData, Converter={StaticResource InvertBoolToVis}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520">
-                        <Border Background="#1E293B" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <TextBlock Text="🗺️" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Border Background="{DynamicResource BrushInputBg}" CornerRadius="12" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="32" Foreground="{DynamicResource BrushAccentGreen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="Belum Ada Data Pemindaian" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8" />
-                        <TextBlock Text="Jalankan pemindaian terlebih dahulu pada tab Pemindai Berkas. Visualisasi Treemap interaktif dibangun secara dinamis dari hasil pemindaian sistem berkas nyata." 
-                                   FontSize="13" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
+                        <TextBlock Text="Belum Ada Data Pemindaian" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource BrushTextPrimary}" Margin="0,0,0,8" />
+                        <TextBlock Text="Pilih disk di bilah atas lalu tekan Pindai untuk membuat peta dari isi penyimpanan yang sebenarnya."
+                                   FontSize="13" Foreground="{DynamicResource BrushTextSecondary}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="20" />
                     </StackPanel>
                 </Border>
 
                 <!-- KONDISI B: FOLDER KOSONG (0 BERKAS) -->
-                <Border Background="#0F172A" CornerRadius="6" Visibility="{Binding IsEmptyFolder, Converter={StaticResource BoolToVis}}">
+                <Border Background="{DynamicResource BrushCardBg}" CornerRadius="6" Visibility="{Binding IsEmptyFolder, Converter={StaticResource BoolToVis}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="📁" FontSize="36" HorizontalAlignment="Center" Margin="0,0,0,12" />
-                        <TextBlock Text="Folder ini kosong" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource BrushTextSecondary}" />
-                        <TextBlock Text="Tidak ada berkas atau subdirektori di dalam folder ini." FontSize="12" Foreground="{StaticResource BrushTextMuted}" Margin="0,4,0,0" />
+                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="36" Foreground="{DynamicResource BrushAccentGreen}" HorizontalAlignment="Center" Margin="0,0,0,12" />
+                        <TextBlock Text="Folder ini kosong" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource BrushTextSecondary}" />
+                        <TextBlock Text="Tidak ada berkas atau subdirektori di dalam folder ini." FontSize="12" Foreground="{DynamicResource BrushTextMuted}" Margin="0,4,0,0" />
                     </StackPanel>
                 </Border>
 
                 <!-- KONDISI C: KANVAS TREEMAP AKTIF -->
-                <ItemsControl ItemsSource="{Binding Nodes}">
+                <ItemsControl x:Name="TreemapItems" ItemsSource="{Binding Nodes}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
                             <Canvas Background="Transparent" ClipToBounds="True" />
@@ -193,22 +214,24 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border x:Name="BoxBorder"
-                                    BorderBrush="#090D16" BorderThickness="1" 
+                                    BorderBrush="{DynamicResource BrushCardBg}" BorderThickness="1"
                                     Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
-                                    CornerRadius="2" Cursor="Hand" Margin="0.5"
+                                    CornerRadius="4" Cursor="Hand" Margin="1"
+                                    RenderTransformOrigin="0.5,0.5" Loaded="TreemapBox_Loaded"
                                     MouseLeftButtonDown="TreemapBox_MouseLeftButtonDown"
                                     MouseEnter="TreemapBox_MouseEnter"
                                     MouseLeave="TreemapBox_MouseLeave">
+                                <Border.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1" /></Border.RenderTransform>
 
                                 <!-- Tooltip Waktu Nyata Saat Penunjuk di Atas Kotak -->
                                 <Border.ToolTip>
-                                    <ToolTip Background="#0F172A" BorderBrush="{StaticResource BrushAccentCyan}" BorderThickness="1" Padding="12">
+                                    <ToolTip Background="{DynamicResource BrushPopupSurface}" BorderBrush="{DynamicResource BrushAccentCyan}" BorderThickness="1" Padding="12">
                                         <StackPanel MaxWidth="360">
                                             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                                 <TextBlock Text="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" />
-                                                <TextBlock Text="📁 " Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" FontSize="14" />
-                                                <TextBlock Text="📄 " Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" FontSize="14" />
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#F8FAFC" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="&#xE8B7; " FontFamily="Segoe MDL2 Assets" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}" FontSize="14" Foreground="{DynamicResource BrushAccentGreen}" />
+                                                <TextBlock Text="&#xE8A5; " FontFamily="Segoe MDL2 Assets" Visibility="{Binding IsDirectory, Converter={StaticResource InvertBoolToVis}}" FontSize="14" Foreground="{DynamicResource BrushAccentCyan}" />
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}" FontSize="13" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
 
                                             <Grid Margin="0,0,0,6">
@@ -222,20 +245,21 @@
                                                     <RowDefinition Height="Auto" />
                                                 </Grid.RowDefinitions>
 
-                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedSize}" Foreground="{StaticResource BrushAccentGreen}" FontWeight="Bold" FontSize="12" />
+                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Ukuran: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedSize}" Foreground="{DynamicResource BrushAccentGreen}" FontWeight="Bold" FontSize="12" />
 
-                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Proporsi: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FormattedPercentage, StringFormat='{}{0} dari folder'}" Foreground="{StaticResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="12" />
+                                                <TextBlock Grid.Row="1" Grid.Column="0" Text="Proporsi: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FormattedPercentage, StringFormat='{}{0} dari folder'}" Foreground="{DynamicResource BrushAccentCyan}" FontWeight="SemiBold" FontSize="12" />
 
-                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Tipe: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TypeDescription}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" />
+                                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Tipe: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TypeDescription}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12" />
                                             </Grid>
 
-                                            <TextBlock Text="{Binding FullPath, StringFormat='Jalur: {0}'}" Foreground="#94A3B8" FontSize="11" FontFamily="{StaticResource FontMono}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                                            <TextBlock Text="{Binding FullPath, StringFormat='Jalur: {0}'}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="11" FontFamily="{StaticResource FontMono}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                                       Visibility="{Binding IsAggregate, Converter={StaticResource InvertBoolToVis}}" />
 
-                                            <Border Background="#1E293B" CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="💡 Klik untuk memilih • Klik 2x untuk masuk folder" Foreground="#FDE68A" FontSize="10" FontWeight="SemiBold" />
+                                            <Border Background="{DynamicResource BrushHoverSurface}" CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="Klik untuk memilih • Klik 2x untuk masuk folder" Foreground="{DynamicResource BrushTextSecondary}" FontSize="10" FontWeight="SemiBold" />
                                             </Border>
                                         </StackPanel>
                                     </ToolTip>
@@ -244,7 +268,33 @@
                                 <!-- Label Teks di Dalam Kotak (Tampil jika kotak cukup besar) -->
                                 <Grid Margin="3" ClipToBounds="True">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" 
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="22" HorizontalAlignment="Center" Margin="0,0,0,5"
+                                                   RenderTransformOrigin="0.5,0.5">
+                                            <TextBlock.RenderTransform><ScaleTransform ScaleX="1" ScaleY="1" /></TextBlock.RenderTransform>
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE8B7;" />
+                                                    <Setter Property="Foreground" Value="#6254EA" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsDirectory}" Value="False">
+                                                            <Setter Property="Text" Value="&#xE8A5;" />
+                                                            <Setter Property="Foreground" Value="#438BE8" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsAggregate}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE8B7;" />
+                                                            <Setter Property="Foreground" Value="#6254EA" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                            <TextBlock.Visibility>
+                                                <MultiBinding Converter="{StaticResource DimToVisIcon}">
+                                                    <Binding Path="Width" />
+                                                    <Binding Path="Height" />
+                                                </MultiBinding>
+                                            </TextBlock.Visibility>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Name}" Foreground="#263451" FontWeight="SemiBold" FontSize="11"
                                                    TextTrimming="CharacterEllipsis" TextAlignment="Center">
                                             <TextBlock.Visibility>
                                                 <MultiBinding Converter="{StaticResource DimToVis}">
@@ -254,7 +304,7 @@
                                             </TextBlock.Visibility>
                                         </TextBlock>
 
-                                        <TextBlock Text="{Binding FormattedSize}" Foreground="#E2E8F0" FontSize="10" 
+                                        <TextBlock Text="{Binding FormattedSize}" Foreground="#52617E" FontSize="10"
                                                    TextAlignment="Center" Opacity="0.9">
                                             <TextBlock.Visibility>
                                                 <MultiBinding Converter="{StaticResource DimToVisLarge}">
@@ -267,16 +317,6 @@
                                 </Grid>
                             </Border>
 
-                            <DataTemplate.Triggers>
-                                <!-- Penyorotan Kotak Terpilih -->
-                                <DataTrigger Value="True">
-                                    <DataTrigger.Binding>
-                                        <MultiBinding Converter="{x:Null}">
-                                            <!-- Binding diatur secara programatik atau visual trigger -->
-                                        </MultiBinding>
-                                    </DataTrigger.Binding>
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -295,33 +335,33 @@
                 <!-- Rincian Item Terpilih -->
                 <StackPanel Grid.Column="0">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                        <Border Background="{StaticResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
-                            <TextBlock Text="{Binding SelectedNode.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="#090D16" />
+                        <Border Background="{DynamicResource BrushAccentCyan}" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding SelectedNode.TypeDescription}" FontWeight="Bold" FontSize="11" Foreground="#202B45" />
                         </Border>
-                        <TextBlock Text="{Binding SelectedNode.Name}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding SelectedNode.Name}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource BrushTextPrimary}" TextTrimming="CharacterEllipsis" />
                     </StackPanel>
 
                     <WrapPanel Orientation="Horizontal">
-                        <TextBlock Text="Ukuran: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                        <TextBlock Text="{Binding SelectedNode.FormattedSize}" FontWeight="Bold" Foreground="{StaticResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
+                        <TextBlock Text="Ukuran: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FormattedSize}" FontWeight="Bold" Foreground="{DynamicResource BrushAccentGreen}" FontSize="12" Margin="0,0,16,0" />
 
-                        <TextBlock Text="Proporsi: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                        <TextBlock Text="{Binding SelectedNode.FormattedPercentage}" FontWeight="SemiBold" Foreground="{StaticResource BrushAccentCyan}" FontSize="12" Margin="0,0,16,0" />
+                        <TextBlock Text="Proporsi: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FormattedPercentage}" FontWeight="SemiBold" Foreground="{DynamicResource BrushAccentCyan}" FontSize="12" Margin="0,0,16,0" />
 
-                        <TextBlock Text="Jalur: " Foreground="{StaticResource BrushTextMuted}" FontSize="12" />
-                        <TextBlock Text="{Binding SelectedNode.FullPath}" Foreground="{StaticResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="Jalur: " Foreground="{DynamicResource BrushTextMuted}" FontSize="12" />
+                        <TextBlock Text="{Binding SelectedNode.FullPath}" Foreground="{DynamicResource BrushTextSecondary}" FontSize="12" FontFamily="{StaticResource FontMono}" TextTrimming="CharacterEllipsis" />
                     </WrapPanel>
                 </StackPanel>
 
                 <!-- Tombol Navigasi / Aksi Item Terpilih -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                     <!-- Tombol Masuk ke Folder (Hanya tampil jika item adalah direktori) -->
-                    <Button Content="📂 Masuk ke Folder" Command="{Binding DrillDownCommand}" CommandParameter="{Binding SelectedNode}"
+                    <Button Content="Masuk ke Folder" Command="{Binding DrillDownCommand}" CommandParameter="{Binding SelectedNode}"
                             Style="{StaticResource PrimaryButtonStyle}" Height="36" Margin="0,0,8,0"
                             Visibility="{Binding SelectedNode.IsDirectory, Converter={StaticResource BoolToVis}}" />
 
                     <!-- Tombol Buka di Explorer -->
-                    <Button Content="🔍 Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
+                    <Button Content="Buka di Explorer" Command="{Binding BukaDiExplorerCommand}"
                             Style="{StaticResource SecondaryButtonStyle}" Height="36" />
                 </StackPanel>
             </Grid>

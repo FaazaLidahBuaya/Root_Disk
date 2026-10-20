@@ -19,8 +19,10 @@ public class FileSystemScanner : IFileSystemScanner
 {
     private readonly ILoggerService? _logger;
     private const int MaxTopItems = 50;
-    private const int ProgressReportIntervalMs = 75;
+    private const int ProgressReportIntervalMs = 300;
     private const int MaxDirectoryDepth = 256;
+    private const int MaxPreviewChildren = 200;
+    private const string AggregateMarker = "::<ROOT-TREEMAP-AGGREGATE>";
 
     public FileSystemScanner(ILoggerService? logger = null)
     {
@@ -67,13 +69,16 @@ public class FileSystemScanner : IFileSystemScanner
             FullPath = rootDirInfo.FullName,
             Name = string.IsNullOrEmpty(rootDirInfo.Name) ? rootDirInfo.FullName : rootDirInfo.Name,
             IsDirectory = true,
+            Children = [],
             LastModified = TryGetLastWriteTime(rootDirInfo)
         };
         report.RootItem = rootItem;
 
-        var visitedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var allFilesList = new List<FileSystemItemModel>();
-        var allDirsList = new List<FileSystemItemModel>();
+        // Karena semua reparse point di bawah root dilewati, traversal tidak memerlukan
+        // HashSet berisi setiap path. Menghindari retensi jutaan string pada scan drive besar.
+        var liveRootChildSizes = new Dictionary<FileSystemItemModel, long>();
+        var largestFiles = new PriorityQueue<FileSystemItemModel, long>();
+        var largestDirectories = new PriorityQueue<FileSystemItemModel, long>();
 
         long scannedFilesCount = 0;
         long scannedDirectoriesCount = 0;
@@ -81,8 +86,6 @@ public class FileSystemScanner : IFileSystemScanner
         int skippedCount = 0;
 
         long lastReportTicks = 0;
-        var progressReport = new ScanProgressReport();
-
         void ReportProgress(string currentPath, bool force = false)
         {
             if (progress == null) return;
@@ -94,14 +97,18 @@ public class FileSystemScanner : IFileSystemScanner
             lastReportTicks = currentTicks;
             double elapsedSec = stopwatch.Elapsed.TotalSeconds;
 
-            progressReport.CurrentPath = currentPath;
-            progressReport.ScannedFilesCount = scannedFilesCount;
-            progressReport.ScannedDirectoriesCount = scannedDirectoriesCount;
-            progressReport.TotalBytesScanned = totalBytesScanned;
-            progressReport.SkippedCount = skippedCount;
-            progressReport.ElapsedTime = stopwatch.Elapsed;
-            progressReport.FilesPerSecond = elapsedSec > 0.05 ? scannedFilesCount / elapsedSec : 0;
-            progressReport.BytesPerSecond = elapsedSec > 0.05 ? totalBytesScanned / elapsedSec : 0;
+            var progressReport = new ScanProgressReport
+            {
+                CurrentPath = currentPath,
+                ScannedFilesCount = scannedFilesCount,
+                ScannedDirectoriesCount = scannedDirectoriesCount,
+                TotalBytesScanned = totalBytesScanned,
+                SkippedCount = skippedCount,
+                ElapsedTime = stopwatch.Elapsed,
+                FilesPerSecond = elapsedSec > 0.05 ? scannedFilesCount / elapsedSec : 0,
+                BytesPerSecond = elapsedSec > 0.05 ? totalBytesScanned / elapsedSec : 0,
+                RootPreview = CreateRootPreview(rootItem, liveRootChildSizes, totalBytesScanned, scannedFilesCount, scannedDirectoriesCount)
+            };
 
             progress.Report(progressReport);
         }
@@ -113,13 +120,10 @@ public class FileSystemScanner : IFileSystemScanner
         {
             _logger?.LogInfo($"Direktori target root merupakan reparse point / link: '{rootDirInfo.FullName}'");
         }
-        visitedPaths.Add(Path.GetFullPath(rootDirInfo.FullName));
-
         // F-03: Traversal iteratif berbasis stack pada heap (mencegah StackOverflowException pada direktori sangat dalam)
         var stack = new Stack<DirectoryScanFrame>();
-        stack.Push(new DirectoryScanFrame(rootDirInfo, rootItem, 0));
+        stack.Push(new DirectoryScanFrame(rootDirInfo, rootItem, 0, null));
         scannedDirectoriesCount++;
-        allDirsList.Add(rootItem);
         ReportProgress(rootDirInfo.FullName);
 
         try
@@ -174,6 +178,7 @@ public class FileSystemScanner : IFileSystemScanner
                                     Name = file.Name,
                                     Extension = file.Extension,
                                     IsDirectory = false,
+                                    Children = FileSystemItemModel.EmptyChildren,
                                     SizeBytes = fileSize,
                                     LastModified = TryGetLastWriteTime(file),
                                     ParentPath = currentFrame.DirInfo.FullName
@@ -185,7 +190,12 @@ public class FileSystemScanner : IFileSystemScanner
 
                                 scannedFilesCount = SafeAdd(scannedFilesCount, 1);
                                 totalBytesScanned = SafeAdd(totalBytesScanned, fileSize);
-                                allFilesList.Add(fileModel);
+                                if (currentFrame.RootChildModel != null &&
+                                    liveRootChildSizes.TryGetValue(currentFrame.RootChildModel, out long liveRootChildSize))
+                                {
+                                    liveRootChildSizes[currentFrame.RootChildModel] = SafeAdd(liveRootChildSize, fileSize);
+                                }
+                                KeepLargest(largestFiles, fileModel, MaxTopItems);
 
                                 if (scannedFilesCount % 50 == 0)
                                 {
@@ -359,17 +369,12 @@ public class FileSystemScanner : IFileSystemScanner
                         continue;
                     }
 
-                    string normalizedSubDirPath = Path.GetFullPath(subDir.FullName);
-                    if (!visitedPaths.Add(normalizedSubDirPath))
-                    {
-                        continue;
-                    }
-
                     var subDirModel = new FileSystemItemModel
                     {
                         FullPath = subDir.FullName,
                         Name = subDir.Name,
                         IsDirectory = true,
+                        Children = [],
                         LastModified = TryGetLastWriteTime(subDir),
                         ParentPath = currentFrame.DirInfo.FullName
                     };
@@ -377,12 +382,15 @@ public class FileSystemScanner : IFileSystemScanner
                     currentFrame.Model.Children.Add(subDirModel);
                     currentFrame.Model.DirectoryCount = SafeAddInt(currentFrame.Model.DirectoryCount, 1);
 
+                    var rootChildModel = currentFrame.RootChildModel ?? (currentFrame.Depth == 0 ? subDirModel : null);
+                    if (currentFrame.Depth == 0 && rootItem.Children.Count <= MaxPreviewChildren)
+                        liveRootChildSizes[rootChildModel!] = 0;
+
                     scannedDirectoriesCount = SafeAdd(scannedDirectoriesCount, 1);
-                    allDirsList.Add(subDirModel);
                     ReportProgress(subDir.FullName);
 
                     // Dorong subdirektori ke stack heap (iteratif tanpa alokasi call-stack CLR)
-                    stack.Push(new DirectoryScanFrame(subDir, subDirModel, currentFrame.Depth + 1));
+                    stack.Push(new DirectoryScanFrame(subDir, subDirModel, currentFrame.Depth + 1, rootChildModel));
                 }
                 else
                 {
@@ -396,6 +404,7 @@ public class FileSystemScanner : IFileSystemScanner
                         parentFrame.Model.SizeBytes = SafeAdd(parentFrame.Model.SizeBytes, completedFrame.Model.SizeBytes);
                         parentFrame.Model.FileCount = SafeAddInt(parentFrame.Model.FileCount, completedFrame.Model.FileCount);
                         parentFrame.Model.DirectoryCount = SafeAddInt(parentFrame.Model.DirectoryCount, completedFrame.Model.DirectoryCount);
+                        KeepLargest(largestDirectories, completedFrame.Model, MaxTopItems);
                     }
                 }
             }
@@ -425,15 +434,14 @@ public class FileSystemScanner : IFileSystemScanner
         report.SkippedCount = skippedCount;
 
         // Ambil Top berkas dan direktori terbesar
-        report.TopLargestFiles = allFilesList
+        report.TopLargestFiles = largestFiles.UnorderedItems
+            .Select(entry => entry.Element)
             .OrderByDescending(f => f.SizeBytes)
-            .Take(MaxTopItems)
             .ToList();
 
-        report.TopLargestDirectories = allDirsList
-            .Where(d => !string.Equals(d.FullPath, rootItem.FullPath, StringComparison.OrdinalIgnoreCase))
+        report.TopLargestDirectories = largestDirectories.UnorderedItems
+            .Select(entry => entry.Element)
             .OrderByDescending(d => d.SizeBytes)
-            .Take(MaxTopItems)
             .ToList();
 
         // Tentukan status akhir - pastikan hasil parsial TIDAK PERNAH dilaporkan sebagai pemindaian lengkap
@@ -476,6 +484,67 @@ public class FileSystemScanner : IFileSystemScanner
         _logger?.LogWarning($"[{errorItem.FriendlyType}] {contextMessage} pada '{path}': {ex.Message}");
     }
 
+    private static FileSystemItemModel CreateRootPreview(
+        FileSystemItemModel root,
+        IReadOnlyDictionary<FileSystemItemModel, long> liveRootChildSizes,
+        long totalBytes,
+        long fileCount,
+        long directoryCount)
+    {
+        var preview = new FileSystemItemModel
+        {
+            FullPath = root.FullPath,
+            Name = root.Name,
+            IsDirectory = true,
+            SizeBytes = totalBytes,
+            FileCount = fileCount > int.MaxValue ? int.MaxValue : (int)fileCount,
+            DirectoryCount = directoryCount > int.MaxValue ? int.MaxValue : (int)directoryCount,
+            LastModified = root.LastModified,
+            ParentPath = root.ParentPath,
+            Children = new List<FileSystemItemModel>(Math.Min(root.Children.Count, MaxPreviewChildren))
+        };
+
+        bool needsAggregate = root.Children.Count > MaxPreviewChildren;
+        int count = Math.Min(root.Children.Count, needsAggregate ? MaxPreviewChildren - 1 : MaxPreviewChildren);
+        long visibleBytes = 0;
+        for (int i = 0; i < count; i++)
+        {
+            var child = root.Children[i];
+            long childSize = child.IsDirectory && liveRootChildSizes.TryGetValue(child, out long liveSize)
+                ? liveSize
+                : child.SizeBytes;
+            visibleBytes = SafeAdd(visibleBytes, childSize);
+            preview.Children.Add(new FileSystemItemModel
+            {
+                FullPath = child.FullPath,
+                Name = child.Name,
+                Extension = child.Extension,
+                IsDirectory = child.IsDirectory,
+                SizeBytes = childSize,
+                FileCount = child.FileCount,
+                DirectoryCount = child.DirectoryCount,
+                LastModified = child.LastModified,
+                ParentPath = child.ParentPath,
+                Children = FileSystemItemModel.EmptyChildren
+            });
+        }
+
+        if (needsAggregate)
+        {
+            preview.Children.Add(new FileSystemItemModel
+            {
+                FullPath = root.FullPath + AggregateMarker,
+                Name = "Lainnya",
+                IsDirectory = false,
+                SizeBytes = Math.Max(0, totalBytes - visibleBytes),
+                DirectoryCount = Math.Max(0, root.Children.Count - count),
+                Children = FileSystemItemModel.EmptyChildren
+            });
+        }
+
+        return preview;
+    }
+
     private static DateTime? TryGetLastWriteTime(FileSystemInfo info)
     {
         try
@@ -506,6 +575,22 @@ public class FileSystemScanner : IFileSystemScanner
         }
     }
 
+    private static void KeepLargest(PriorityQueue<FileSystemItemModel, long> queue, FileSystemItemModel item, int maximumCount)
+    {
+        if (queue.Count < maximumCount)
+        {
+            queue.Enqueue(item, item.SizeBytes);
+            return;
+        }
+
+        queue.TryPeek(out _, out var smallestSize);
+        if (item.SizeBytes > smallestSize)
+        {
+            queue.Dequeue();
+            queue.Enqueue(item, item.SizeBytes);
+        }
+    }
+
     private static int SafeAddInt(int a, int b)
     {
         try
@@ -529,13 +614,15 @@ public class FileSystemScanner : IFileSystemScanner
         public DirectoryInfo DirInfo { get; }
         public FileSystemItemModel Model { get; }
         public int Depth { get; }
+        public FileSystemItemModel? RootChildModel { get; }
         public IEnumerator<DirectoryInfo>? SubDirEnumerator { get; set; }
 
-        public DirectoryScanFrame(DirectoryInfo dirInfo, FileSystemItemModel model, int depth)
+        public DirectoryScanFrame(DirectoryInfo dirInfo, FileSystemItemModel model, int depth, FileSystemItemModel? rootChildModel)
         {
             DirInfo = dirInfo;
             Model = model;
             Depth = depth;
+            RootChildModel = rootChildModel;
         }
 
         public void Dispose()

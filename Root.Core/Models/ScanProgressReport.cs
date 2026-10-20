@@ -16,6 +16,8 @@ public class ScanProgressReport
     public double FilesPerSecond { get; set; }
     public double BytesPerSecond { get; set; }
     public int SkippedCount { get; set; }
+    /// <summary>Snapshot dangkal dan terbatas untuk menampilkan peta selama pemindaian.</summary>
+    public FileSystemItemModel? RootPreview { get; set; }
 
     public string FormattedTotalBytes => FileFormatter.FormatBytes(TotalBytesScanned);
     public string FormattedFilesCount => FileFormatter.FormatNumber(ScannedFilesCount);

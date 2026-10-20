@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
+using Root.App.Services;
 using Root.Core.Models;
 using Root.Core.Mvvm;
 using Root.Core.Services;
@@ -15,9 +17,21 @@ public class MainViewModel : ViewModelBase
     private readonly Action? _shutdownAction;
 
     private ViewModelBase _currentView;
-    private string _currentTitle = "Dasbor Analisis Penyimpanan";
+    private string _currentTitle = "Pohon Penyimpanan";
+    private bool _isDarkTheme;
+    private long _lastLivePreviewTimestamp;
 
     public string AppVersionText => "Versi 8.0 - Windows x64";
+
+    public bool IsDarkTheme
+    {
+        get => _isDarkTheme;
+        set
+        {
+            if (SetProperty(ref _isDarkTheme, value))
+                ThemeManager.Apply(value);
+        }
+    }
 
     public MainViewModel(
         DashboardViewModel dashboardViewModel,
@@ -50,7 +64,8 @@ public class MainViewModel : ViewModelBase
         _alertAction = alertAction;
         _shutdownAction = shutdownAction;
 
-        _currentView = Dashboard;
+        _currentView = Hierarchy;
+        ToggleThemeCommand = new RelayCommand(() => IsDarkTheme = !IsDarkTheme);
 
         NavigateToDashboardCommand = new RelayCommand(() =>
         {
@@ -67,17 +82,18 @@ public class MainViewModel : ViewModelBase
         NavigateToTreemapCommand = new RelayCommand(() =>
         {
             CurrentView = Treemap;
-            CurrentTitle = "Treemap Interaktif Penyimpanan";
+            CurrentTitle = "Peta Kotak";
         });
 
         NavigateToHierarchyCommand = new RelayCommand(() =>
         {
             CurrentView = Hierarchy;
-            CurrentTitle = "Tampilan Daftar Hierarkis";
+            CurrentTitle = "Pohon Penyimpanan";
         });
 
         NavigateToLargeFilesCommand = new RelayCommand(() =>
         {
+            LargeFiles.PrepareForDisplay();
             CurrentView = LargeFiles;
             CurrentTitle = "Eksplorasi Berkas Berukuran Besar";
         });
@@ -111,6 +127,7 @@ public class MainViewModel : ViewModelBase
         // Hubungkan event hasil pemindaian langsung dari Scanner dan Dashboard ke modul-modul lain
         Dashboard.ScanCompleted += OnScanCompleted;
         Scanner.ScanCompleted += OnScanCompleted;
+        Scanner.ScanProgressChanged += OnScanProgressChanged;
 
         Dashboard.RequestNavigateToTreemap += () => NavigateToTreemapCommand.Execute(null);
         Dashboard.RequestNavigateToHierarchy += () => NavigateToHierarchyCommand.Execute(null);
@@ -148,6 +165,23 @@ public class MainViewModel : ViewModelBase
         }
     }
 
+    private void OnScanProgressChanged(ScanProgressReport report)
+    {
+        if (report.RootPreview == null || (!ReferenceEquals(CurrentView, Treemap) && !ReferenceEquals(CurrentView, Hierarchy)))
+            return;
+
+        long now = Stopwatch.GetTimestamp();
+        long previous = _lastLivePreviewTimestamp;
+        if (previous != 0 && Stopwatch.GetElapsedTime(previous, now) < TimeSpan.FromMilliseconds(300))
+            return;
+
+        _lastLivePreviewTimestamp = now;
+        if (ReferenceEquals(CurrentView, Treemap))
+            Treemap.LoadScanPreview(report.RootPreview);
+        else
+            Hierarchy.LoadScanPreview(report.RootPreview);
+    }
+
     public DashboardViewModel Dashboard { get; }
     public ScannerViewModel Scanner { get; }
     public TreemapViewModel Treemap { get; }
@@ -161,11 +195,16 @@ public class MainViewModel : ViewModelBase
     public bool IsRunningAsAdmin => _adminService.IsRunningAsAdmin();
     public bool CanElevate => !IsRunningAsAdmin;
     public string AdminRoleText => IsRunningAsAdmin ? "Administrator" : "Pengguna Standar";
+    public bool IsAnalysisView => ReferenceEquals(CurrentView, Treemap) || ReferenceEquals(CurrentView, Hierarchy);
 
     public ViewModelBase CurrentView
     {
         get => _currentView;
-        set => SetProperty(ref _currentView, value);
+        set
+        {
+            if (SetProperty(ref _currentView, value))
+                OnPropertyChanged(nameof(IsAnalysisView));
+        }
     }
 
     public string CurrentTitle
@@ -184,6 +223,7 @@ public class MainViewModel : ViewModelBase
     public RelayCommand NavigateToLogsCommand { get; }
     public RelayCommand NavigateToAboutCommand { get; }
     public RelayCommand RestartAsAdminCommand { get; }
+    public RelayCommand ToggleThemeCommand { get; }
 
     public void ExecuteRestartAsAdmin()
     {

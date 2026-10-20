@@ -47,9 +47,9 @@
 
                 <!-- Tombol Aksi -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="📋 Salin Semua" Command="{Binding SalinSemuaCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
-                    <Button Content="💾 Ekspor Log..." Command="{Binding EksporLogCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
-                    <Button Content="🗑️ Bersihkan" Command="{Binding BersihkanLogCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" />
+                    <Button Content="Salin Semua" Command="{Binding SalinSemuaCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+                    <Button Content="Ekspor Log..." Command="{Binding EksporLogCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" Margin="0,0,8,0" />
+                    <Button Content="Bersihkan" Command="{Binding BersihkanLogCommand}" Style="{StaticResource SecondaryButtonStyle}" Height="36" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -58,16 +58,16 @@
         <Border Style="{StaticResource RootCardStyle}" Grid.Row="1" Padding="0">
             <DataGrid ItemsSource="{Binding FilteredLogs}" AutoGenerateColumns="False" 
                       CanUserAddRows="False" IsReadOnly="True" HeadersVisibility="Column"
-                      Background="#0F172A" RowBackground="#0F172A" AlternatingRowBackground="#1E293B"
+                      Background="#FFFFFF" RowBackground="#FFFFFF" AlternatingRowBackground="#F1F3FA"
                       Foreground="{StaticResource BrushTextPrimary}" BorderThickness="0"
-                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#334155">
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#E3E6EF">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Waktu" Binding="{Binding FormattedTime}" Width="110" FontFamily="{StaticResource FontMono}" />
                     
                     <DataGridTemplateColumn Header="Tingkat" Width="110">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Border Background="#1E293B" BorderBrush="{Binding Level, Converter={StaticResource LogLevelToBrush}}" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                <Border Background="#F1F3FA" BorderBrush="{Binding Level, Converter={StaticResource LogLevelToBrush}}" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
                                     <TextBlock Text="{Binding LevelText}" Foreground="{Binding Level, Converter={StaticResource LogLevelToBrush}}" FontWeight="Bold" FontSize="11" />
                                 </Border>
                             </DataTemplate>
@@ -75,7 +75,7 @@
                     </DataGridTemplateColumn>
 
                     <DataGridTextColumn Header="Pesan Aktivitas" Binding="{Binding Message}" Width="450" FontWeight="Medium" />
-                    <DataGridTextColumn Header="Rincian Tambahan" Binding="{Binding Details}" Width="*" FontFamily="{StaticResource FontMono}" Foreground="#94A3B8" />
+                    <DataGridTextColumn Header="Rincian Tambahan" Binding="{Binding Details}" Width="*" FontFamily="{StaticResource FontMono}" Foreground="#52617E" />
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

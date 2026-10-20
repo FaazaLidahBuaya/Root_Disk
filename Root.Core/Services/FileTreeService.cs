@@ -77,7 +77,7 @@ public class FileTreeService : IFileTreeService
     {
         if (!current.IsDirectory)
         {
-            return criteria.MatchesFile(current) ? CloneItem(current) : null;
+            return criteria.MatchesFile(current) ? current : null;
         }
 
         // Jika direktori: evaluasi setiap anak
@@ -124,6 +124,7 @@ public class FileTreeService : IFileTreeService
     public FileSystemItemModel SortHierarchy(FileSystemItemModel root, SortField field, SortDirection direction, bool directoriesFirst = true)
     {
         if (root == null) return null!;
+        if (!root.IsDirectory) return root;
 
         var cloned = CloneItem(root);
         cloned.Children = Sort(root.Children.Select(c => SortHierarchy(c, field, direction, directoriesFirst)), field, direction, directoriesFirst).ToList();
@@ -138,6 +139,45 @@ public class FileTreeService : IFileTreeService
         int maxResults = 0)
     {
         if (root == null) return Array.Empty<FileSystemItemModel>();
+
+        if (maxResults > 0)
+        {
+            var reversedComparer = Comparer<FileSystemItemModel>.Create((left, right) =>
+                CompareFiles(right, left, sortField, sortDirection));
+            var topFiles = new PriorityQueue<FileSystemItemModel, FileSystemItemModel>(reversedComparer);
+
+            void KeepTopFile(FileSystemItemModel file)
+            {
+                if (topFiles.Count < maxResults)
+                {
+                    topFiles.Enqueue(file, file);
+                    return;
+                }
+
+                if (CompareFiles(file, topFiles.Peek(), sortField, sortDirection) < 0)
+                {
+                    topFiles.Dequeue();
+                    topFiles.Enqueue(file, file);
+                }
+            }
+
+            void FlattenTop(FileSystemItemModel node)
+            {
+                if (!node.IsDirectory)
+                {
+                    if (criteria == null || criteria.MatchesFile(node))
+                        KeepTopFile(node);
+                    return;
+                }
+
+                foreach (var child in node.Children)
+                    FlattenTop(child);
+            }
+
+            FlattenTop(root);
+            var topResults = topFiles.UnorderedItems.Select(entry => entry.Element).ToList();
+            return Sort(topResults, sortField, sortDirection, directoriesFirst: false);
+        }
 
         var flatList = new List<FileSystemItemModel>();
 
@@ -162,12 +202,28 @@ public class FileTreeService : IFileTreeService
 
         var sorted = Sort(flatList, sortField, sortDirection, directoriesFirst: false);
 
-        if (maxResults > 0 && sorted.Count > maxResults)
-        {
-            return sorted.Take(maxResults).ToList();
-        }
-
         return sorted;
+    }
+
+    private static int CompareFiles(FileSystemItemModel left, FileSystemItemModel right, SortField field, SortDirection direction)
+    {
+        int comparison = field switch
+        {
+            SortField.Nama => StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name),
+            SortField.TanggalDiubah => (left.LastModified ?? DateTime.MinValue).CompareTo(right.LastModified ?? DateTime.MinValue),
+            _ => left.SizeBytes.CompareTo(right.SizeBytes)
+        };
+
+        if (direction == SortDirection.Menurun && comparison != 0)
+            comparison = comparison < 0 ? 1 : -1;
+
+        if (comparison != 0 || field == SortField.Nama)
+            return comparison;
+
+        comparison = StringComparer.OrdinalIgnoreCase.Compare(left.Name, right.Name);
+        return comparison != 0
+            ? comparison
+            : StringComparer.OrdinalIgnoreCase.Compare(left.FullPath, right.FullPath);
     }
 
     private static FileSystemItemModel CloneItem(FileSystemItemModel original)
